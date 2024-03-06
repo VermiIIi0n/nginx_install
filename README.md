@@ -23,9 +23,9 @@ pip install -U nginx_install
 or
 
 ```bash
-git clone https://github.com/VermiIIi0n/nginx_install
+git clone https://github.com/VermiIIi0n/nginx_install.git
 cd nginx_install
-pip install poetry
+pip install -U poetry
 poetry install
 ```
 

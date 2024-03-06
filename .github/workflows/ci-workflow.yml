@@ -4,8 +4,14 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "**.py"
+      - poetry.lock
   pull_request:
     branches: [master]
+    paths:
+      - "**.py"
+      - poetry.lock
 
 # env:
 #   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
