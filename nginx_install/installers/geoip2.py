@@ -51,8 +51,8 @@ class GeoIP2Installer(BaseInstaller):
         logger.debug("%s: Latest libmaxminddb version: %s", self, v)
         tar_path = ctx.build_dir / f"libmaxminddb-{v}.tar.gz"
         await ctx.download(
-            f"https://github.com/maxmind/libmaxminddb/releases/download/{
-                v}/libmaxminddb-{v}.tar.gz",
+            "https://github.com/maxmind/libmaxminddb/releases/download/"
+            f"{v}/libmaxminddb-{v}.tar.gz",
             tar_path,
             title="Get libmaxminddb source",
         )
@@ -89,8 +89,8 @@ class GeoIP2Installer(BaseInstaller):
                 downloads.append(
                     asyncio.get_running_loop().create_task(ctx.download(
                         "https://download.maxmind.com/app/geoip_download?"
-                        f"edition_id={eid}&license_key={
-                            license_key}&suffix=tar.gz",
+                        f"edition_id={eid}&license_key={license_key}"
+                        "&suffix=tar.gz",
                         ctx.build_dir / f"{eid}.tar.gz",
                         title=f"Get {eid}"
                     ))
@@ -103,10 +103,10 @@ class GeoIP2Installer(BaseInstaller):
             edition_ids = []
 
         for eid in edition_ids:
+            path_prefix = ctx.build_dir / eid
             rs = await ctx.run_cmd(
-                f"tar -xzf '{ctx.build_dir /
-                             f"{eid}.tar.gz"}' -C '{ctx.build_dir}' "
-                f"&& cp -rf {ctx.build_dir / f"{eid}_*"} /opt/geoip"
+                f"tar -xzf '{path_prefix}.tar.gz' -C '{ctx.build_dir}' "
+                f"&& cp -rf '{path_prefix}_'* /opt/geoip"
             )
             rs.raise_for_returncode()
 
@@ -143,7 +143,7 @@ class GeoIP2Installer(BaseInstaller):
         )
 
         ctx.core.configure_opts.append(
-            f"--add{"-dynamic" if self.dynamic else ''}-module={path.resolve()}"
+            f"--add{'-dynamic' if self.dynamic else ''}-module={path.resolve()}"
         )
 
     async def build(self, ctx):

@@ -17,7 +17,7 @@ class HeadersMoreInstaller(BaseInstaller):
         )
 
         ctx.core.configure_opts.append(
-            f"--add{"-dynamic" if self.dynamic else ''}-module={path.resolve()}"
+            f"--add{'-dynamic' if self.dynamic else ''}-module={path.resolve()}"
         )
 
     async def build(self, ctx):

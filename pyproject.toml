@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "nginx_install"
-version = "0.1.1"
+version = "0.1.2"
 description = "Auto Nginx Installation"
 authors = ["VermiIIi0n <dungeon.behind0t@icloud.com>"]
 readme = "README.md"
@@ -10,6 +10,8 @@ homepage = "https://github.com/VermiIIi0n/nginx_install"
 
 keywords = [
     "utilities",
+    "nginx",
+    "automation",
 ]
 
 classifiers = [
@@ -19,6 +21,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Topic :: Utilities",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
@@ -27,7 +31,7 @@ classifiers = [
 ]
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.10"
 pyyaml = "^6.0.1"
 pydantic = "^2.6.3"
 httpx = "^0.27.0"

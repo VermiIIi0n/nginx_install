@@ -100,12 +100,10 @@ async def main() -> int:
             await config.core.clean(ctx)
             await asyncio.gather(*(i.clean(ctx) for i in config.installers))
 
-        if not args.quiet:
-            print(f"Completed {action} action")
+        ctx.print(f"Completed {action} action")
 
     except CalledProcessError as e:
-        err_msg = f"Command {e.cmd} returned status {
-            e.returncode}, error: {e.stderr}"
+        err_msg = f"Command {e.cmd} returned status {e.returncode}, error: {e.stderr}"
         ctx.logger.critical(err_msg)
         sys.stderr.write(err_msg)
         ctx.logger.exception(e)
@@ -122,7 +120,6 @@ async def main() -> int:
     else:
         if action == "install" and args.reload:
             rs = await ctx.run_cmd("nginx -t")
-
             if rs.failed:
                 sys.stderr.write("Nginx configuration test failed")
                 sys.stderr.write(rs.get_error_str())
