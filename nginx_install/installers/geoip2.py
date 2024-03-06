@@ -81,19 +81,26 @@ class GeoIP2Installer(BaseInstaller):
             rs.raise_for_returncode()
 
         # Getting database
-        edition_ids = self.edition_ids
-        downloads = list[asyncio.Task]()
-        for eid in edition_ids:
-            downloads.append(
-                asyncio.get_running_loop().create_task(ctx.download(
-                    "https://download.maxmind.com/app/geoip_download?"
-                    f"edition_id={eid}&license_key={
-                        license_key}&suffix=tar.gz",
-                    ctx.build_dir / f"{eid}.tar.gz",
-                    title=f"Get {eid}"
-                ))
-            )
-        await asyncio.gather(*downloads)
+        if account_id and license_key:
+            logger.debug("%s: Downloading GeoIP2 databases", self)
+            edition_ids = self.edition_ids
+            downloads = list[asyncio.Task]()
+            for eid in edition_ids:
+                downloads.append(
+                    asyncio.get_running_loop().create_task(ctx.download(
+                        "https://download.maxmind.com/app/geoip_download?"
+                        f"edition_id={eid}&license_key={
+                            license_key}&suffix=tar.gz",
+                        ctx.build_dir / f"{eid}.tar.gz",
+                        title=f"Get {eid}"
+                    ))
+                )
+            await asyncio.gather(*downloads)
+        else:
+            logger.warning(
+                "%s: Account ID and License Key are not set, "
+                "skipping downloading GeoIP2 databases", self)
+            edition_ids = []
 
         for eid in edition_ids:
             rs = await ctx.run_cmd(
@@ -104,7 +111,7 @@ class GeoIP2Installer(BaseInstaller):
             rs.raise_for_returncode()
 
         # Configure auto update
-        if self.enable_auto_update:
+        if self.enable_auto_update and account_id and license_key:
             logger.debug("%s: Installing geoipupdate", self)
             rs = await ctx.run_cmd(
                 "apt update && apt install -y geoipupdate"

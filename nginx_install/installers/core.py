@@ -230,27 +230,22 @@ WantedBy=multi-user.target
         nginx_version = f"nginx-{semversion}"
         tar_path = ctx.build_dir / f"{nginx_version}.tar.gz"
 
-        tmp_file: aio.wrappers.AsyncIOStream[str] | None = None
-        if ctx.dry_run:
-            tmp_file = aio.tempfile.NamedTemporaryFile()
-            tar_path = Path(tmp_file.name)
+        if await ctx.has_core_built():
+            ctx.logger.info(
+                "Nginx source has already been built, skipping download")
         else:
-            if ctx.nginx_src_dir.exists():
-                ctx.logger.debug("%s: Removing directory %s",
-                                 self, ctx.nginx_src_dir)
-                rs = await ctx.run_cmd(f"rm -rf {ctx.nginx_src_dir}")
-                rs.raise_for_returncode()
+            ctx.logger.debug("%s: Removing directory %s",
+                             self, ctx.nginx_src_dir)
+            rs = await ctx.run_cmd(f"rm -rf {ctx.nginx_src_dir}")
+            rs.raise_for_returncode()
 
-        await ctx.download(download_url, tar_path, title="Get nginx source")
+            await ctx.download(download_url, tar_path, title="Get nginx source")
 
-        ctx.logger.debug(
-            "%s: Start decompressing nginx source %s", self, tar_path)
-        rs = await ctx.run_cmd(f"tar -xzf {tar_path} -C {ctx.build_dir}")
-        rs = await ctx.run_cmd(f"mv {ctx.build_dir / nginx_version} {ctx.nginx_src_dir}")
-        rs.raise_for_returncode()
-
-        if tmp_file is not None:
-            await tmp_file.close()
+            ctx.logger.debug(
+                "%s: Start decompressing nginx source %s", self, tar_path)
+            rs = await ctx.run_cmd(f"tar -xzf {tar_path} -C {ctx.build_dir}")
+            rs = await ctx.run_cmd(f"mv {ctx.build_dir / nginx_version} {ctx.nginx_src_dir}")
+            rs.raise_for_returncode()
 
         ctx.logger.debug("Checking for required packages")
         rs = await ctx.run_cmd("apt-get update")
@@ -316,14 +311,6 @@ WantedBy=multi-user.target
                 "%s: Creating conf.d directory at %s", self, confd)
             confd.mkdir(exist_ok=True)
 
-        ctx.logger.debug("Enabling nginx service")
-        rs = await ctx.run_cmd("systemctl enable nginx")
-        rs.raise_for_returncode()
-
-        ctx.logger.debug("Restarting nginx service")
-        rs = await ctx.run_cmd("systemctl restart nginx")
-        rs.raise_for_returncode()
-
         if (await ctx.run_cmd(f"getent group {self.group}")).failed:
             ctx.logger.debug("%s: Creating group %s", self, self.group)
             rs = await ctx.run_cmd(f"addgroup {self.group}")
@@ -337,6 +324,10 @@ WantedBy=multi-user.target
         ctx.logger.debug("%s: Add group %s to user %s",
                          self, self.group, self.user)
         rs = await ctx.run_cmd(f"usermod -aG {self.group} {self.user}")
+        rs.raise_for_returncode()
+
+        ctx.logger.debug("Enabling nginx service")
+        rs = await ctx.run_cmd("systemctl enable nginx")
         rs.raise_for_returncode()
 
         ctx.logger.info("Nginx installation completed")

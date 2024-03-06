@@ -7,20 +7,29 @@ on:
   pull_request:
     branches: [master]
 
-env:
-  MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
-  MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
+# env:
+#   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
+#   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, ubuntu-22.04, ubuntu-20.04]
         python-version: ["3.12"]
-        os: [ubuntu-latest, ubuntu-22.04, ubuntu-20.04, ubuntu-18.04]
-        config: [core, all]
-        dynamic: [true, false]
+        config: [all]
+        dynamic: ["false"]
         nginx_version: [mainline, stable]
+        include:
+          - os: ubuntu-latest
+            python-version: "3.12"
+            config: all
+            dynamic: "true"
+            nginx_version: mainline
+        exclude:
+          - config: core
+            dynamic: "true"
 
     steps:
       - uses: actions/checkout@v3
@@ -51,24 +60,24 @@ jobs:
       - name: Generate config - dynamic
         run: |
           python ./scripts/congen.py config.yaml ${{ matrix.config }} --dynamic -v ${{ matrix.nginx_version }}
-        if: ${{ matrix.dynamic == 'true' && matrix.config != 'core' }}
+        if: matrix.dynamic == 'true'
       - name: Dry test
         run: |
           nginx_install install --dry --verbose
           nginx_install uninstall --dry --verbose
-      - name: Wet test - verbose
+      - name: Wet test - separate
         run: |
           poetry build
           pip install ./
-          sudo -E nginx_install prepare ./build --verbose
-          sudo -E nginx_install build ./build --verbose
-          sudo -E nginx_install install ./build --verbose --no-build
-          sudo -E nginx_install uninstall ./build --verbose
-          sudo -E nginx_install clean ./build --verbose
-      - name: Wet test - non-verbose
+          sudo -E `which python` -m nginx_install prepare ./build
+          sudo -E `which python` -m nginx_install build ./build
+          sudo -E `which python` -m nginx_install install ./build --no-build
+          sudo -E `which python` -m nginx_install uninstall ./build
+          sudo -E `which python` -m nginx_install clean ./build
+      - name: Wet test - combined
         run: |
-          sudo -E nginx_install install ./build
-          sudo -E nginx_install uninstall ./build
+          sudo -E `which python` -m nginx_install install ./build
+          sudo -E `which python` -m nginx_install uninstall ./build
     # - name: Upload coverage result
     #   env:
     #     COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}

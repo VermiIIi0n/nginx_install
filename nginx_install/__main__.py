@@ -1,4 +1,5 @@
 import sys
+import os
 import asyncio
 import argparse
 import yaml
@@ -22,8 +23,12 @@ async def main() -> int:
     parser.add_argument("-V", "--version", action="version", version="0.0.1")
     parser.add_argument("-c", "--config", type=str,
                         help="Path to config file", default="config.yaml")
+    parser.add_argument("-u", "--user", type=str,
+                        help="User to own build_dir", default=getuser())
     parser.add_argument("-q", "--quiet", action="store_true",
                         help="Suppress all output unless error occurs")
+    parser.add_argument("-r", "--reload", action="store_true",
+                        help="Reload Nginx after install")
     parser.add_argument("--keep-build", action="store_true",
                         help="Keep build directory after completion")
     parser.add_argument("--no-build", action="store_true",
@@ -43,8 +48,7 @@ async def main() -> int:
         build_dir = Path(tempfile.mkdtemp())
     else:
         build_dir = Path(args.build_dir)
-        if not args.dry:
-            build_dir.mkdir(exist_ok=True)
+        build_dir.mkdir(exist_ok=True)
 
     config_path = Path(args.config)
     if not config_path.exists():
@@ -59,6 +63,11 @@ async def main() -> int:
         print(f"Config file {config_path} created")
         return 0
 
+    euid = os.geteuid()
+    if euid != 0:
+        fwd_args = ["sudo", "-E", sys.executable, *sys.argv, "-u", args.user]
+        os.execlpe("sudo", *fwd_args, os.environ)
+
     config = Config.model_validate(yaml.safe_load(config_path.read_text()))
     ctx = Context(config, build_dir, args.dry, args.verbose, args.quiet)
     ctx.logger.debug("All extra installers in config: %s", config.installers)
@@ -67,22 +76,27 @@ async def main() -> int:
 
     try:
         if action in ("prepare", "install", "build"):
+            ctx.print("Preparation started...")
             await config.core.prepare(ctx)
             await asyncio.gather(*(i.prepare(ctx) for i in installers))
 
         if action in ("install", "build") and not args.no_build:
+            ctx.print("Building started...")
             await config.core.build(ctx)
             await asyncio.gather(*(i.build(ctx) for i in installers))
 
         if action == "install":
+            ctx.print("Installation started...")
             await config.core.install(ctx)
             await asyncio.gather(*(i.install(ctx) for i in installers))
 
         if action == "uninstall":
+            ctx.print("Uninstallation started...")
             await config.core.uninstall(ctx)
             await asyncio.gather(*(i.uninstall(ctx) for i in config.installers))
 
         if action in ("clean", "install", "uninstall") and not args.keep_build:
+            ctx.print("Cleaning up...")
             await config.core.clean(ctx)
             await asyncio.gather(*(i.clean(ctx) for i in config.installers))
 
@@ -91,10 +105,11 @@ async def main() -> int:
 
     except CalledProcessError as e:
         err_msg = f"Command {e.cmd} returned status {
-            e.returncode}, error: {e.stderr}, output: {e.stdout}"
+            e.returncode}, error: {e.stderr}"
         ctx.logger.critical(err_msg)
         sys.stderr.write(err_msg)
         ctx.logger.exception(e)
+        ctx.logger.debug("Error output: %s", e.output)
         return 1
 
     except Exception as e:
@@ -105,7 +120,7 @@ async def main() -> int:
         return 1
 
     else:
-        if action == "install":
+        if action == "install" and args.reload:
             rs = await ctx.run_cmd("nginx -t")
 
             if rs.failed:
@@ -118,6 +133,11 @@ async def main() -> int:
                 sys.stderr.write("Failed to reload Nginx")
                 sys.stderr.write(rs.get_error_str())
                 return 1
+
+    finally:
+        if build_dir.exists():
+            rs = await ctx.run_cmd(
+                f"chown -R {args.user} {build_dir}")
 
     return 0
 

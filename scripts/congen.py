@@ -20,8 +20,12 @@ args = parser.parse_args()
 path = Path(args.output)
 mods = [m.strip().lower() for m in args.mods]
 
-cfg = Config() if args.config is None else Config.model_validate(
-    yaml.safe_load(Path(args.config).read_text()))
+cfg = Config()
+cfg.logging.console = True
+cfg.logging.level = "DEBUG"
+if args.config is not None:
+    Config.model_validate(
+        yaml.safe_load(Path(args.config).read_text()))
 
 cfg.core.nginx_version = args.version
 

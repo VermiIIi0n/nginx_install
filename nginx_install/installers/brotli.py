@@ -18,6 +18,11 @@ class BrotliInstaller(BaseInstaller):
         )
 
         rs = await ctx.run_cmd(
+            f"apt-get install -y libbrotli-dev"
+        )
+        rs.raise_for_returncode()
+
+        rs = await ctx.run_cmd(
             f"cd '{path}' && git submodule update --init --recursive && cd -"
         )
         rs.raise_for_returncode()

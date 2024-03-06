@@ -40,13 +40,13 @@ nginx_install uninstall --dry ## creates a config.yaml file and quits
 Edit your `config.yaml` and run the following command to install Nginx:
 
 ```bash
-sudo -E nginx_install install
+nginx_install install
 ```
 
 To uninstall Nginx, use the following command:
 
 ```bash
-sudo -E nginx_install uninstall
+nginx_install uninstall
 ```
 
 ## Usage
@@ -69,19 +69,19 @@ When running the script for real business, you might want to run as root, becaus
 To just build the Nginx binary, use the following command:
 
 ```bash
-sudo -E nginx_install build
+nginx_install build
 ```
 
 To just install without building, use the following command:
 
 ```bash
-sudo -E nginx_install install --no-build
+nginx_install install --no-build
 ```
 
 To build and install Nginx, use the following command:
 
 ```bash
-sudo -E nginx_install install
+nginx_install install
 ```
 
 **NOTICE: `build` and `install` both delete the previous build directory and create a new one.**
@@ -93,7 +93,7 @@ Currently not supporting cross-compiling. If your target system is the same as t
 If you cloned the repository, use the following command to run the script:
 
 ```bash
-poetry run sudo -E `which python` nginx_install <...>
+poetry run `which python` nginx_install <...>
 ```
 
 ## Dry Run

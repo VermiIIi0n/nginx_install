@@ -1,13 +1,11 @@
 import httpx
+import io
 import subprocess
 import logging
 import asyncio
-import tempfile
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from pathlib import Path
-from uuid import uuid4
 from urllib.request import getproxies
-from semantic_version import Version
 from rich.progress import Progress
 from vermils.asynctools.asinkrunner import AsinkRunner
 from vermils.io import aio
@@ -21,12 +19,14 @@ else:
 class Result:
     def __init__(
             self,
-            p: subprocess.CompletedProcess | subprocess.Popen,
+            returncode: int,
+            output: io.StringIO | str | None,
+            error: io.StringIO | str | None,
             cmds: tuple[str, ...] | list[str],
     ):
-        self.returncode = p.returncode
-        self.output = p.stdout
-        self.error = p.stderr
+        self.returncode = returncode
+        self.output = output
+        self.error = error
         self.cmds = cmds
 
     def raise_for_returncode(self):
@@ -38,14 +38,18 @@ class Result:
                 output, error)
 
     def get_output_str(self):
-        if self.output is not None:
-            with open(self.output.fileno(), 'r') as f:
-                return f.read()
+        if self.output is None:
+            return ''
+        if isinstance(self.output, str):
+            return self.output
+        return self.output.getvalue()
 
     def get_error_str(self):
-        if self.error is not None:
-            with open(self.error.fileno(), 'r') as f:
-                return f.read()
+        if self.error is None:
+            return ''
+        if isinstance(self.error, str):
+            return self.error
+        return self.error.getvalue()
 
     @property
     def ok(self):
@@ -68,7 +72,7 @@ class Context:
         self.cfg = cfg
         self.core = cfg.core
         """Same as `cfg.core`, the `NginxInstaller` instance"""
-        self.build_dir = build_dir
+        self.build_dir = build_dir.resolve()
         self.dry_run = dry_run
         self.verbose = verbose
         self.quiet = quiet
@@ -149,26 +153,42 @@ class Context:
     ):
         if shell and not isinstance(cmds, str):
             cmds = ' '.join(cmds)
+
         if isinstance(cmds, str):
             cmds = [cmds]
+
         if (self.dry_run or self.verbose) and not self.quiet:
             print(f"Issue command: {' '.join(cmds)}")
-            if self.dry_run and not run_in_dry:
-                return Result(subprocess.CompletedProcess(cmds, 0), cmds)
 
-        if self.verbose and not self.quiet:
-            stdout = None
-            stderr = None
-        else:
-            stdout = tempfile.NamedTemporaryFile(delete=False)
-            stderr = tempfile.NamedTemporaryFile(delete=False)
+        if self.dry_run and not run_in_dry:
+            return Result(0, None, None, cmds)
 
+        stdout = subprocess.PIPE
+        stderr = subprocess.PIPE
         if shell:
             cmds = ["sudo", "-E", "bash", "-c", ' '.join(cmds)]
-        p = subprocess.Popen(cmds, cwd=cwd, shell=False, stdin=subprocess.DEVNULL,
-                             stdout=stdout, stderr=stderr, **kw)
+        p = subprocess.Popen(
+            cmds, cwd=cwd, shell=False, stdin=subprocess.DEVNULL,
+            stdout=stdout, stderr=stderr, **kw)
+
+        out_io = io.StringIO()
+        if p.stdout is None or p.stderr is None:
+            raise RuntimeError("stdout or stderr is None")
+
+        for val in p.stdout:
+            if isinstance(val, bytes):
+                val = val.decode()
+            out_io.write(val)
+            if not self.quiet and self.verbose:
+                print(val, end='')
+
         p.wait()
-        return Result(p, cmds)
+
+        err_str = p.stderr.read()
+        if isinstance(err_str, bytes):
+            err_str = err_str.decode()
+
+        return Result(p.returncode, out_io, err_str, cmds)
 
     async def download(
             self,
@@ -226,3 +246,6 @@ class Context:
             run_in_dry=run_in_dry,
         )
         rs.raise_for_returncode()
+
+    async def has_core_built(self):
+        return await aio.path.exists(self.nginx_src_dir / "objs" / "nginx")

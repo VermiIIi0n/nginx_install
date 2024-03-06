@@ -11,6 +11,11 @@ class DynamicResizeTLSInstaller(BaseInstaller):
 
     async def prepare(self, ctx):
         logger = ctx.logger
+
+        if await ctx.has_core_built():
+            logger.debug("%s: Core already built", self)
+            return
+
         path = ctx.build_dir / "ngx_http_tls_dyn_size"
         logger.debug("%s: Cloning DRR TLS into %s", self, path)
 
@@ -40,7 +45,7 @@ class DynamicResizeTLSInstaller(BaseInstaller):
 
         logger.debug("%s: Applying patch %s", self, pname)
         rs = await ctx.run_cmd(
-            f"cd {ctx.nginx_src_dir} && patch -p1 < {path.resolve() / pname} && cd -")
+            f"cd {ctx.nginx_src_dir} && patch -f -p1 < {path.resolve() / pname} && cd -")
         rs.raise_for_returncode()
 
     async def build(self, ctx):
