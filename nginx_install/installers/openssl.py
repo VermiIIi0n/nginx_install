@@ -1,6 +1,5 @@
 import bs4
 import re
-from pydantic import Field
 from .base import BaseInstaller
 
 ver_re = re.compile(r".*?(\d+\.\d+\.\d+)$")

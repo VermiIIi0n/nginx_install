@@ -117,14 +117,11 @@ class GeoIP2Installer(BaseInstaller):
                 "apt update && apt install -y geoipupdate"
             )
             rs.raise_for_returncode()
-            conf = """
-AccountID {account_id}
-LicenseKey {license_key}
-EditionIDs {edition_ids}
-            """.format(
-                account_id=account_id,
-                license_key=license_key,
-                edition_ids=' '.join(edition_ids),
+
+            conf = (
+                f"AccountID {account_id}\n"
+                f"LicenseKey {license_key}\n"
+                f"EditionIDs {' '.join(edition_ids)}\n"
             )
             logger.debug("%s: Writing GeoIP2.conf", self)
             if not ctx.dry_run:

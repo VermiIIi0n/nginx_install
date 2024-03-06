@@ -1,4 +1,3 @@
-from vermils.io import aio
 from .base import BaseInstaller
 
 
@@ -18,7 +17,7 @@ class BrotliInstaller(BaseInstaller):
         )
 
         rs = await ctx.run_cmd(
-            f"apt-get install -y libbrotli-dev"
+            "apt-get install -y libbrotli-dev"
         )
         rs.raise_for_returncode()
 

@@ -21,8 +21,8 @@ class VersionSheet:
         self.legacies = legacies
 
     @property
-    def all(self) -> tuple[Version, ...]:
-        return tuple([self.mainline, self.stable, *self.legacies])
+    def all(self) -> list[Version]:
+        return [self.mainline, self.stable, *self.legacies]
 
     @property
     def latest(self) -> Version:
@@ -141,7 +141,8 @@ class NginxInstaller(BaseInstaller):
         ret.append(f"--group={self.group}")
         return ret
 
-    async def get_versions(self, client: httpx.AsyncClient | None = None):
+    @staticmethod
+    async def get_versions(client: httpx.AsyncClient | None = None):
         nginx_release_page = "https://nginx.org/en/download.html"
         if client is None:
             client = httpx.AsyncClient()
@@ -158,7 +159,10 @@ class NginxInstaller(BaseInstaller):
             if ver is None:
                 continue
             mainline_version = Version(
-                major=int(ver.group(1)), minor=int(ver.group(2)), patch=int(ver.group(3)))
+                major=int(ver.group(1)),
+                minor=int(ver.group(2)),
+                patch=int(ver.group(3))
+            )
             break
 
         stable_header = soup.find(string="Stable version")
@@ -169,7 +173,10 @@ class NginxInstaller(BaseInstaller):
             if ver is None:
                 continue
             stable_version = Version(
-                major=int(ver.group(1)), minor=int(ver.group(2)), patch=int(ver.group(3)))
+                major=int(ver.group(1)),
+                minor=int(ver.group(2)),
+                patch=int(ver.group(3))
+            )
             break
 
         legacy_header = soup.find(string="Legacy versions")
@@ -188,7 +195,7 @@ class NginxInstaller(BaseInstaller):
 
         return VersionSheet(mainline_version, stable_version, legacy_versions)
 
-    def get_init_script(self, ctx: Context):
+    def get_init_script(self):
         template = """
 [Unit]
 Description=The NGINX HTTP and reverse proxy server
@@ -243,8 +250,11 @@ WantedBy=multi-user.target
 
             ctx.logger.debug(
                 "%s: Start decompressing nginx source %s", self, tar_path)
-            rs = await ctx.run_cmd(f"tar -xzf {tar_path} -C {ctx.build_dir}")
-            rs = await ctx.run_cmd(f"mv {ctx.build_dir / nginx_version} {ctx.nginx_src_dir}")
+            rs = await ctx.run_cmd(
+                f"tar -xzf {tar_path} -C {ctx.build_dir}")
+            rs.raise_for_returncode()
+            rs = await ctx.run_cmd(
+                f"mv {ctx.build_dir / nginx_version} {ctx.nginx_src_dir}")
             rs.raise_for_returncode()
 
         ctx.logger.debug("Checking for required packages")
@@ -258,8 +268,12 @@ WantedBy=multi-user.target
             "libgeoip-dev", "cmake", "libperl-dev"
         ]
 
-        packages = [p for p in packages
-                    if (await ctx.run_cmd(f"dpkg -s {p} | grep '^Status: install ok installed'")).returncode]
+        packages = [
+            p for p in packages
+            if (await ctx.run_cmd(
+                f"dpkg -s {p} | grep '^Status: install ok installed'"))
+            .returncode
+        ]
 
         ctx.logger.debug("%s: Installing packages: %s", self, packages)
         rs = await ctx.run_cmd(f"apt-get install -y {' '.join(packages)}")
@@ -280,14 +294,14 @@ WantedBy=multi-user.target
 
     async def install(self, ctx: Context):
         ctx.logger.info("Start installing nginx")
-        rs = await ctx.run_cmd(f"make install", cwd=str(ctx.nginx_src_dir))
+        rs = await ctx.run_cmd("make install", cwd=str(ctx.nginx_src_dir))
         rs.raise_for_returncode()
 
         if not ctx.dry_run:
             init_script_path = "/etc/systemd/system/nginx.service"
             ctx.logger.debug("%s: Creating init script at %s",
                              self, init_script_path)
-            init_script = self.get_init_script(ctx)
+            init_script = self.get_init_script()
             async with aio.open(init_script_path, "w") as f:
                 await f.write(init_script)
 
@@ -335,16 +349,16 @@ WantedBy=multi-user.target
     async def uninstall(self, ctx: Context):
         ctx.logger.info("Start uninstalling nginx")
         rs = list[Result]()
-        for dir in (
+        for d in (
             self.sbin_path, self.modules_path, self.cache_path,
             self.error_log_path.parent, self.http_log_path.parent,
             self.pid_path.parent, self.lock_path.parent
         ):
-            if dir.exists():
-                ctx.logger.debug("%s: Removing directory %s", self, dir)
-                rs.append(await ctx.run_cmd(f"rm -rf {dir}"))
+            if d.exists():
+                ctx.logger.debug("%s: Removing directory %s", self, d)
+                rs.append(await ctx.run_cmd(f"rm -rf {d}"))
                 continue
-            ctx.logger.debug("%s: Directory %s does not exist", self, dir)
+            ctx.logger.debug("%s: Directory %s does not exist", self, d)
 
         for r in rs:
             r.raise_for_returncode()

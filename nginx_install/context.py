@@ -235,6 +235,7 @@ class Context:
             allow_existing: bool = True,
             run_in_dry: bool = True
     ):
+        _ = title  # avoid unused variable warning
         if await aio.path.exists(path):
             self.logger.debug("%s: Already cloned", path)
             if not allow_existing:

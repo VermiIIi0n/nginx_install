@@ -15,3 +15,16 @@ _normal_installer_types: list[type] = [
     BrotliInstaller,
     GeoIP2Installer,
 ]
+
+__all__ = [
+    "BaseInstaller",
+    "NginxInstaller",
+    "OpenSSLInstaller",
+    "HeadersMoreInstaller",
+    "FancyIndexInstaller",
+    "DynamicResizeTLSInstaller",
+    "BrotliInstaller",
+    "GeoIP2Installer",
+    "from_dict",
+    "_normal_installer_types",
+]

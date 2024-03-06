@@ -66,7 +66,7 @@ async def main() -> int:
     euid = os.geteuid()
     if euid != 0:
         fwd_args = ["sudo", "-E", sys.executable, *sys.argv, "-u", args.user]
-        os.execlpe("sudo", *fwd_args, os.environ)
+        os.execlpe("/usr/bin/sudo", *fwd_args, os.environ)
 
     config = Config.model_validate(yaml.safe_load(config_path.read_text()))
     ctx = Context(config, build_dir, args.dry, args.verbose, args.quiet)
