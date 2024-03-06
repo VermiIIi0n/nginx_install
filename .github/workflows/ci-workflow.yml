@@ -1,0 +1,79 @@
+name: Python CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches: [master]
+
+env:
+  MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
+  MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: ["3.12"]
+        os: [ubuntu-latest, ubuntu-22.04, ubuntu-20.04, ubuntu-18.04]
+        config: [core, all]
+        dynamic: [true, false]
+        nginx_version: [mainline, stable]
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install -U poetry
+          poetry install
+      - name: Run test suite
+        run: |
+          poetry run py.test -v --cov=nginx_install
+      - name: Perform type check
+        run: |
+          poetry run pytest --mypy -m mypy nginx_install
+        if: matrix.python-version != 'pypy3'
+      - name: pip install
+        run: |
+          poetry build
+          pip install ./
+      - name: Generate config
+        run: |
+          python ./scripts/congen.py config.yaml ${{ matrix.config }} -v ${{ matrix.nginx_version }}
+        if: matrix.dynamic == 'false'
+      - name: Generate config - dynamic
+        run: |
+          python ./scripts/congen.py config.yaml ${{ matrix.config }} --dynamic -v ${{ matrix.nginx_version }}
+        if: ${{ matrix.dynamic == 'true' && matrix.config != 'core' }}
+      - name: Dry test
+        run: |
+          nginx_install install --dry --verbose
+          nginx_install uninstall --dry --verbose
+      - name: Wet test - verbose
+        run: |
+          poetry build
+          pip install ./
+          sudo -E nginx_install prepare ./build --verbose
+          sudo -E nginx_install build ./build --verbose
+          sudo -E nginx_install install ./build --verbose --no-build
+          sudo -E nginx_install uninstall ./build --verbose
+          sudo -E nginx_install clean ./build --verbose
+      - name: Wet test - non-verbose
+        run: |
+          sudo -E nginx_install install ./build
+          sudo -E nginx_install uninstall ./build
+    # - name: Upload coverage result
+    #   env:
+    #     COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+    #   run: |
+    #      if [ -n "${COVERALLS_REPO_TOKEN}" ]; then
+    #         poetry run coveralls
+    #      fi
+    #   if: ${{ matrix.os == 'ubuntu-latest' && contains(matrix.python-version, '3.12') }}

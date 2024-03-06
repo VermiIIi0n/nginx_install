@@ -1,0 +1,101 @@
+version: 0.0.1
+network:
+  proxy: null
+  user_agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko)
+    Chrome/122.0.0.0 Safari/537.36
+  extra: {}
+logging:
+  level: INFO
+  format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  console: false
+pymodule_paths: []
+core:
+  nginx_version: mainline
+  config_prefix: /etc/nginx
+  config_name: nginx.conf
+  sbin_path: /usr/sbin/nginx
+  modules_path: /usr/lib/nginx/modules
+  error_log_path: /var/log/nginx/error.log
+  http_log_path: /var/log/nginx/access.log
+  pid_path: /var/run/nginx.pid
+  lock_path: /var/run/nginx.lock
+  cache_path: /var/cache/nginx
+  user: www-data
+  group: net-admin
+  configure_opts:
+  - --http-client-body-temp-path=/var/cache/nginx/client_temp
+  - --http-proxy-temp-path=/var/cache/nginx/proxy_temp
+  - --http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp
+  - --http-scgi-temp-path=/var/cache/nginx/scgi_temp
+  - --http-uwsgi-temp-path=/var/cache/nginx/uwsgi_temp
+  - --with-pcre-jit
+  - --with-threads
+  - --with-file-aio
+  - --with-http_ssl_module
+  - --with-http_v2_module
+  - --with-http_mp4_module
+  - --with-http_auth_request_module
+  - --with-http_slice_module
+  - --with-http_stub_status_module
+  - --with-http_realip_module
+  - --with-http_addition_module
+  - --with-http_sub_module
+  - --with-http_random_index_module
+  - --with-http_secure_link_module
+  - --with-http_degradation_module
+  - --with-http_gunzip_module
+  - --with-http_gzip_static_module
+  - --with-http_perl_module
+  - --with-http_geoip_module
+  - --with-stream
+  - --with-stream_ssl_module
+  - --with-stream_realip_module
+  - --with-mail=dynamic
+  - --with-mail_ssl_module
+  cc_opts:
+  - -Wno-deprecated-declarations
+  - -Wno-ignore-qualifiers
+  - -O3
+  - -march=native
+  - -fPIC
+  - -Wdate-time
+  - -D_FORTIFY_SOURCE=2
+  - -flto
+  - -funroll-loops
+  - -ffunction-sections
+  - -fdata-sections
+  - -Wl,--gc-sections
+  classname: NginxInstaller
+  modulename: nginx_install.installers.core
+installers:
+- enabled: true
+  classname: OpenSSLInstaller
+  modulename: nginx_install.installers.openssl
+- enabled: true
+  dynamic: false
+  classname: HeadersMoreInstaller
+  modulename: nginx_install.installers.headers_more
+- enabled: true
+  dynamic: false
+  classname: FancyIndexInstaller
+  modulename: nginx_install.installers.fancyindex
+- enabled: true
+  classname: DynamicResizeTLSInstaller
+  modulename: nginx_install.installers.http_tls_dyn_size
+- enabled: true
+  dynamic: false
+  classname: BrotliInstaller
+  modulename: nginx_install.installers.brotli
+- enabled: true
+  dynamic: false
+  account_id: ''
+  license_key: ''
+  edition_ids:
+  - GeoLite2-ASN
+  - GeoLite2-City
+  - GeoLite2-Country
+  enable_auto_update: true
+  auto_update_cron: 0 0 * * 0
+  configure_opts: []
+  classname: GeoIP2Installer
+  modulename: nginx_install.installers.geoip2
