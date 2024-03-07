@@ -99,3 +99,6 @@ installers:
   configure_opts: []
   classname: GeoIP2Installer
   modulename: nginx_install.installers.geoip2
+- enabled: true
+  classname: ZlibCFInstaller
+  modulename: nginx_install.installers.zlib_cf

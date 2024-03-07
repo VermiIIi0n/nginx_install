@@ -5,7 +5,7 @@ from pydantic import field_serializer, SerializationInfo
 from pathlib import Path
 from warnings import warn
 from .installers import BaseInstaller, NginxInstaller
-from .installers import _normal_installer_types, from_dict
+from .installers import _non_core_installer_types, from_dict
 
 
 class BaseConfig(BaseModel):
@@ -29,7 +29,7 @@ class Config(BaseConfig):
     pymodule_paths: list[Path] = []
     core: NginxInstaller = Field(default_factory=NginxInstaller)
     installers: list[BaseInstaller] = Field(
-        default_factory=lambda: [t() for t in _normal_installer_types])
+        default_factory=lambda: [t() for t in _non_core_installer_types])
 
     @field_validator("pymodule_paths", mode="after")
     def add_pymodule_paths(cls, v: list[Path]):

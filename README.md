@@ -11,6 +11,7 @@ This script is designed to install Nginx on modern Ubuntu, other Debian-based sy
 - [geoip2](https://github.com/leev/ngx_http_geoip2_module)
 - [fancyindex](https://github.com/aperezdc/ngx-fancyindex)
 - OpenSSL from source
+- [Zlib-Cloudflare](https://github.com/cloudflare/zlib) from source
 
 Go to discussions to request more modules.
 
