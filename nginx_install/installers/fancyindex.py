@@ -6,8 +6,8 @@ class FancyIndexInstaller(BaseInstaller):
     dynamic: bool = False
 
     @property
-    def ngx_modulename(self) -> str:
-        return "ngx_http_fancyindex_module"
+    def ngx_modulenames(self) -> tuple[str, ...]:
+        return ("ngx_http_fancyindex_module",)
 
     async def prepare(self, ctx):
         logger = ctx.logger

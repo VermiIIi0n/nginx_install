@@ -28,8 +28,8 @@ class GeoIP2Installer(BaseInstaller):
     configure_opts: list[str] = Field(default_factory=list)
 
     @property
-    def ngx_modulename(self) -> str:
-        return "ngx_http_geoip2_module"
+    def ngx_modulenames(self) -> tuple[str, ...]:
+        return ("ngx_http_geoip2_module",)
 
     async def _build_maxminddb(self, ctx: Context):  # skipcq: PY-R1000
         logger = ctx.logger

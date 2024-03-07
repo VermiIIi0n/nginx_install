@@ -6,8 +6,8 @@ class HeadersMoreInstaller(BaseInstaller):
     dynamic: bool = False
 
     @property
-    def ngx_modulename(self) -> str:
-        return "ngx_http_headers_more_filter_module"
+    def ngx_modulenames(self) -> tuple[str, ...]:
+        return ("ngx_http_headers_more_filter_module",)
 
     async def prepare(self, ctx):
         logger = ctx.logger

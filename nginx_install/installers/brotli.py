@@ -7,8 +7,9 @@ class BrotliInstaller(BaseInstaller):
     dynamic: bool = False
 
     @property
-    def ngx_modulename(self) -> str:
-        return "ngx_http_brotli_filter_module"
+    def ngx_modulenames(self) -> tuple[str, ...]:
+        return ("ngx_http_brotli_filter_module",
+                "ngx_http_brotli_static_module")
 
     async def prepare(self, ctx):
         logger = ctx.logger
