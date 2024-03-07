@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from pathlib import Path
 from urllib.request import getproxies
 from rich.progress import Progress
-from vermils.asynctools.asinkrunner import AsinkRunner
 from vermils.io import aio
 from vermils.gadgets.monologger import MonoLogger
 if TYPE_CHECKING:
@@ -105,7 +104,6 @@ class Context:
         if cfg.logging.console and not quiet:
             self.logger.addHandler(logging.StreamHandler())
 
-        self._sink = AsinkRunner()
         self.progress = Progress()
         if not quiet:
             self.progress.start()
@@ -137,9 +135,12 @@ class Context:
 
         :return: Result
         """
-        return await self._sink.run(
-            self.sync_run_cmd,
-            cmds, cwd, shell=shell, run_in_dry=run_in_dry, **kw
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            None,
+            lambda: self.sync_run_cmd(
+                cmds, cwd, shell=shell, run_in_dry=run_in_dry, **kw
+            )
         )
 
     def sync_run_cmd(  # skipcq: PY-R1000
