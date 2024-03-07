@@ -13,7 +13,7 @@ from nginx_install.utils import model_dump_yaml
 from subprocess import CalledProcessError
 
 
-async def main() -> int:
+async def main() -> int:  # skipcq: PY-R1000
     parser = argparse.ArgumentParser(
         "nginx_install", description="nginx installation script")
     parser.add_argument("action", type=str, help="Action to perform", choices=[

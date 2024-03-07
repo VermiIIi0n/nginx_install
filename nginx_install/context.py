@@ -3,7 +3,7 @@ import io
 import subprocess
 import logging
 import asyncio
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 from pathlib import Path
 from urllib.request import getproxies
 from rich.progress import Progress
@@ -142,7 +142,7 @@ class Context:
             cmds, cwd, shell=shell, run_in_dry=run_in_dry, **kw
         )
 
-    def sync_run_cmd(
+    def sync_run_cmd(  # skipcq: PY-R1000
         self,
         cmds: str | tuple[str, ...] | list[str],
         cwd: str | None = None,

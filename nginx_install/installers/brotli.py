@@ -1,3 +1,4 @@
+from vermils.io import aio
 from .base import BaseInstaller
 
 
@@ -15,16 +16,19 @@ class BrotliInstaller(BaseInstaller):
         )
         rs.raise_for_returncode()
 
-        await ctx.git_clone(
-            "https://github.com/google/ngx_brotli.git",
-            path,
-            title="Clone Brotli",
-        )
+        if not await aio.path.exists(path):
+            # git complains if existing repo is not owned by the user
+            # so skip clone and submodule update if the directory exists
+            await ctx.git_clone(
+                "https://github.com/google/ngx_brotli.git",
+                path,
+                title="Clone Brotli",
+            )
 
-        rs = await ctx.run_cmd(
-            f"cd '{path}' && git submodule update --init --recursive && cd -"
-        )
-        rs.raise_for_returncode()
+            rs = await ctx.run_cmd(
+                f"cd '{path}' && git submodule update --init --recursive && cd -"
+            )
+            rs.raise_for_returncode()
 
         ctx.core.configure_opts.append(
             f"--add{'-dynamic' if self.dynamic else ''}-module={path.resolve()}"
