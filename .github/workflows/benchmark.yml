@@ -7,45 +7,24 @@ on:
     paths:
       - nginx_install/**
       - poetry.lock
-      - .github/workflows/ci-workflow.yml
+      - .github/workflows/benchmark.yml
   pull_request:
     branches: [master]
     paths:
       - nginx_install/**
       - poetry.lock
-      - .github/workflows/ci-workflow.yml
+      - .github/workflows/benchmark.yml
 
 jobs:
   build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-22.04, ubuntu-20.04]
+        os: [ubuntu-latest]
         python-version: ["3.12"]
         config: [core, all]
-        dynamic: ["false"]
-        nginx_version: [mainline, stable]
-        include:
-          - os: ubuntu-latest
-            python-version: "3.12"
-            config: all
-            dynamic: "true"
-            nginx_version: mainline
-          - os: ubuntu-latest
-            python-version: "3.10"
-            config: all
-            nginx_version: mainline
-          - os: ubuntu-latest
-            python-version: "3.11"
-            config: all
-            nginx_version: mainline
-          - os: ubuntu-latest
-            python-version: "pypy3.10"
-            config: all
-            nginx_version: mainline
-        exclude:
-          - config: core
-            dynamic: "true"
+        dynamic: ["true", "false"]
+        nginx_version: [mainline]
 
     steps:
       - uses: actions/checkout@v4
@@ -58,14 +37,6 @@ jobs:
           python -m pip install -U pip
           pip install -U poetry
           poetry install
-      - name: Run test suite
-        run: |
-          poetry run py.test -v --cov=nginx_install
-        if: matrix.python-version != 'pypy3.10'
-      - name: Perform type check
-        run: |
-          poetry run pytest --mypy -m mypy nginx_install
-        if: matrix.python-version != 'pypy3.10'
       - name: pip install
         run: |
           poetry build
@@ -81,26 +52,35 @@ jobs:
         run: |
           sudo tar -xvf ./scripts/GeoIP.tar.gz -C /usr/local/share/
           sudo tar -xvf ./scripts/city.tar.gz -C /usr/local/share/GeoIP/
-      - name: Dry test
-        run: |
-          nginx_install install --dry --verbose
-          nginx_install uninstall --dry --verbose
-      - name: Wet test - separate
-        run: |
-          poetry build
-          pip install ./
-          sudo -E `which python` -m nginx_install prepare ./build
-          sudo -E `which python` -m nginx_install build ./build
-          sudo -E `which python` -m nginx_install install ./build --no-build
-          sudo -E `which python` -m nginx_install uninstall ./build
-          sudo -E `which python` -m nginx_install clean ./build
-      - name: Wet test - combined
+      - name: Build and install
         run: |
           sudo -E `which python` -m nginx_install install
-          sudo -E `which python` -m nginx_install uninstall
         # env:
         #   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
         #   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
+      - name: Benchmark Preparation
+        run: |
+          cd ./scripts/
+          echo "127.0.0.1 sample.com" | sudo tee -a /etc/hosts
+
+          sudo bash ./issue_ssl.sh
+
+          sudo mkdir -p /var/www/
+          sudo tar -xzf ./sample.tar.gz -C /var/www/
+          sudo chown -R www-data:www-data /var/www/sample
+
+          python ngx_congen.py | sudo tee /etc/nginx/nginx.conf
+
+          sudo nginx -t
+          sudo systemctl start nginx || sudo systemctl status nginx
+      - name: Benchmark
+        run: |
+          cd ./scripts/
+          echo "Benchmarking HTTP"
+          bash ./benchmark.sh -t 2 -c 400 -d 30s http://sample.com/
+          echo "----------------------------------------"
+          echo "Benchmarking HTTPS"
+          bash ./benchmark.sh -t 2 -c 400 -d 30s https://sample.com/
     # - name: Upload coverage result
     #   env:
     #     COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
