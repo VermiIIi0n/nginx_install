@@ -119,8 +119,9 @@ module_loading = ""
 has_brotli = False
 has_geoip2 = False
 for installer in filter(lambda x: x.enabled, config.installers):
-    if getattr(installer, "dynamic", False) and getattr(installer, "ngx_modulename", None):
-        module_loading += f"load_module {config.core.modules_path.resolve() / installer.ngx_modulename}.so;\n"
+    ngx_modulename = getattr(installer, "ngx_modulename", None)
+    if getattr(installer, "dynamic", False) and ngx_modulename is not None:
+        module_loading += f"load_module {config.core.modules_path.resolve() / ngx_modulename}.so;\n"
     if isinstance(installer, installers.BrotliInstaller):
         has_brotli = True
     if isinstance(installer, installers.GeoIP2Installer):

@@ -57,8 +57,8 @@ class NginxInstaller(BaseInstaller):
     modules_path: Path = Path("/usr/lib/nginx/modules")
     error_log_path: Path = Path("/var/log/nginx/error.log")
     http_log_path: Path = Path("/var/log/nginx/access.log")
-    pid_path: Path = Path("/var/run/nginx.pid")
-    lock_path: Path = Path("/var/run/nginx.lock")
+    pid_path: Path = Path("/run/nginx.pid")
+    lock_path: Path = Path("/run/nginx.lock")
     cache_path: Path = Path("/var/cache/nginx")
     user: str = "www-data"
     group: str = "www-data"
@@ -195,8 +195,8 @@ class NginxInstaller(BaseInstaller):
 
         return VersionSheet(mainline_version, stable_version, legacy_versions)
 
-    def get_init_script(self):
-        template = """
+    def get_init_script(self) -> str:
+        return f"""
 [Unit]
 Description=The NGINX HTTP and reverse proxy server
 After=syslog.target network-online.target remote-fs.target nss-lookup.target
@@ -204,21 +204,17 @@ Wants=network-online.target
 
 [Service]
 Type=forking
-PIDFile={pid_path}
-ExecStartPre={sbin_path} -t
-ExecStart={sbin_path}
-ExecReload={sbin_path} -s reload
+PIDFile={self.pid_path}
+ExecStartPre={self.sbin_path} -t
+ExecStart={self.sbin_path}
+ExecReload={self.sbin_path} -s reload
 ExecStop=/bin/kill -s QUIT $MAINPID
 TimeoutStopSec=15
 PrivateTmp=true
 
 [Install]
 WantedBy=multi-user.target
-    """
-        return template.format(
-            pid_path=self.pid_path,
-            sbin_path=self.sbin_path
-        )
+"""
 
     async def prepare(self, ctx: Context):
         ctx.logger.info("Start preparing nginx")

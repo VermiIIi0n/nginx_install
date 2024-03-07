@@ -17,8 +17,8 @@ core:
   modules_path: /usr/lib/nginx/modules
   error_log_path: /var/log/nginx/error.log
   http_log_path: /var/log/nginx/access.log
-  pid_path: /var/run/nginx.pid
-  lock_path: /var/run/nginx.lock
+  pid_path: /run/nginx.pid
+  lock_path: /run/nginx.lock
   cache_path: /var/cache/nginx
   user: www-data
   group: net-admin

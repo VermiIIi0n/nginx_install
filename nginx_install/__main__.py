@@ -4,6 +4,7 @@ import asyncio
 import argparse
 import yaml
 import tempfile
+import shutil
 from typing import Literal
 from pathlib import Path
 from getpass import getuser
@@ -48,6 +49,8 @@ async def main() -> int:  # skipcq: PY-R1000
         build_dir = Path(tempfile.mkdtemp())
     else:
         build_dir = Path(args.build_dir)
+        if build_dir.exists() and (not args.no_build or args.keep_build):
+            shutil.rmtree(build_dir)
         build_dir.mkdir(exist_ok=True)
 
     config_path = Path(args.config)
