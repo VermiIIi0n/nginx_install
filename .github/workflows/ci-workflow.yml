@@ -129,6 +129,7 @@ jobs:
         if: matrix.post_action == 'benchmark'
       - name: Benchmark
         run: |
+          cd ./scripts/
           echo "Benchmarking HTTP"
           bash ./benchmark.sh -t 2 -c 400 -d 30s http://sample.com/
           echo "----------------------------------------"
