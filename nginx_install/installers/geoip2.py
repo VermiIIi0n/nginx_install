@@ -3,6 +3,7 @@ import re
 import asyncio
 import os
 from multiprocessing import cpu_count
+from pathlib import Path
 from vermils.io import aio
 from pydantic import Field
 from ..context import Context
@@ -20,6 +21,8 @@ class GeoIP2Installer(BaseInstaller):
         default_factory=lambda:
         ["GeoLite2-ASN", "GeoLite2-City", "GeoLite2-Country"]
     )
+    conf_path: Path = Path("/usr/local/etc/GeoIP.conf")
+    database_dir: Path = Path("/usr/local/share/GeoIP")
     enable_auto_update: bool = True
     auto_update_cron: str = "0 0 * * 0"
     configure_opts: list[str] = Field(default_factory=list)
@@ -109,7 +112,7 @@ class GeoIP2Installer(BaseInstaller):
             path_prefix = ctx.build_dir / eid
             rs = await ctx.run_cmd(
                 f"tar -xzf '{path_prefix}.tar.gz' -C '{ctx.build_dir}' "
-                f"&& cp -rf '{path_prefix}_'* /opt/geoip"
+                f"&& cp -rf '{path_prefix}_'* {self.database_dir}"
             )
             rs.raise_for_returncode()
 
@@ -133,7 +136,7 @@ class GeoIP2Installer(BaseInstaller):
         )
         logger.debug("%s: Writing GeoIP2.conf", self)
         if not ctx.dry_run:
-            async with aio.open("/usr/local/etc/GeoIP.conf", "w") as f:
+            async with aio.open(self.conf_path, "w") as f:
                 await f.write(conf)
         rs = await ctx.run_cmd(
             f"echo \"{self.auto_update_cron} `which geoipupdate`\" "
@@ -177,7 +180,7 @@ class GeoIP2Installer(BaseInstaller):
     async def uninstall(self, ctx):
         ctx.print(f"{self}: Cannot determine dependencies to clean. "
                   "You may need to mannually remove "
-                  "/opt/geoip, /etc/cron.d/geoipupdate, /usr/local/etc/GeoIP.conf, "
+                  f"{self.database_dir}, /etc/cron.d/geoipupdate, {self.conf_path}, "
                   "geoipupdate and /usr/local/lib/libmaxminddb.so")
 
     async def clean(self, ctx):

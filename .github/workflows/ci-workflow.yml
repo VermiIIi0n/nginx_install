@@ -23,6 +23,7 @@ jobs:
         config: [core, all]
         dynamic: ["false"]
         nginx_version: [mainline, stable]
+        post_action: ["none"]
         include:
           - os: ubuntu-latest
             python-version: "3.12"
@@ -44,6 +45,10 @@ jobs:
             config: all
             dynamic: "false"
             nginx_version: mainline
+          - os: ubuntu-latest
+            python-version: "3.12"
+            nginx_version: mainline
+            post_action: "benchmark"
         exclude:
           - config: core
             dynamic: "true"
@@ -79,6 +84,10 @@ jobs:
         run: |
           python ./scripts/congen.py config.yaml ${{ matrix.config }} --dynamic -v ${{ matrix.nginx_version }}
         if: matrix.dynamic == 'true'
+      - name: Copy geoip2 database
+        run: |
+          sudo tar -xvf ./scripts/GeoIP.tar.gz -C /usr/local/share/
+          sudo tar -xvf ./scripts/city.tar.gz -C /usr/local/share/GeoIP/
       - name: Dry test
         run: |
           nginx_install install --dry --verbose
@@ -99,6 +108,25 @@ jobs:
         # env:
         #   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
         #   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
+      - name: Benchmark
+        run: |
+          cd ./scripts/
+          echo "127.0.0.1 sample.com" | sudo tee -a /etc/hosts
+
+          sudo bash ./issue_ssl.sh
+
+          sudo mkdir -p /var/www/
+          sudo tar -xzf ./sample.tar.gz -C /var/www/
+          sudo chown -R www-data:www-data /var/www/sample
+
+          python ngx_congen.py | sudo tee /etc/nginx/nginx.conf
+
+          sudo systemctl restart nginx
+          sudo systemctl status nginx
+
+          bash ./benchmark.sh -t 2 -c 400 -d 30s http://sample.com/
+          bash ./benchmark.sh -t 2 -c 400 -d 30s https://sample.com/
+        if: matrix.post_action == 'benchmark'
     # - name: Upload coverage result
     #   env:
     #     COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
