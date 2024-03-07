@@ -111,7 +111,7 @@ jobs:
         # env:
         #   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
         #   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
-      - name: Benchmark
+      - name: Benchmark Preparation
         run: |
           cd ./scripts/
           echo "127.0.0.1 sample.com" | sudo tee -a /etc/hosts
@@ -126,8 +126,13 @@ jobs:
 
           sudo nginx -t
           sudo systemctl start nginx || sudo systemctl status nginx
-
+        if: matrix.post_action == 'benchmark'
+      - name: Benchmark
+        run: |
+          echo "Benchmarking HTTP"
           bash ./benchmark.sh -t 2 -c 400 -d 30s http://sample.com/
+          echo "----------------------------------------"
+          echo "Benchmarking HTTPS"
           bash ./benchmark.sh -t 2 -c 400 -d 30s https://sample.com/
         if: matrix.post_action == 'benchmark'
     # - name: Upload coverage result
