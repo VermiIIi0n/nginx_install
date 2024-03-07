@@ -13,7 +13,7 @@ class FancyIndexInstaller(BaseInstaller):
         logger = ctx.logger
         logger.debug("%s: Preparing FancyIndex installer", self)
 
-        path = ctx.nginx_src_dir / "ngx-fancyindex"
+        path = ctx.build_dir / "ngx-fancyindex"
         logger.debug("%s: Cloning FancyIndex into %s", self, path)
 
         await ctx.git_clone(
@@ -23,7 +23,7 @@ class FancyIndexInstaller(BaseInstaller):
         )
 
         ctx.core.configure_opts.append(
-            f"--add{'-dynamic' if self.dynamic else ''}-module={path.resolve()}"
+            f"--add{'-dynamic' if self.dynamic else ''}-module=../ngx-fancyindex"
         )
 
     async def build(self, ctx):

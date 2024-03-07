@@ -49,7 +49,7 @@ class OpenSSLInstaller(BaseInstaller):
         )
         rs.raise_for_returncode()
 
-        ctx.core.configure_opts.append(f"--with-openssl='{dpath.resolve()}'")
+        ctx.core.configure_opts.append(f"--with-openssl=../openssl-{v}")
 
     async def build(self, ctx):
         ...

@@ -107,7 +107,7 @@ jobs:
           sudo -E `which python` -m nginx_install clean ./build
       - name: Wet test - combined
         run: |
-          sudo -E `which python` -m nginx_install install ./build
+          sudo -E `which python` -m nginx_install install
         # env:
         #   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
         #   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}

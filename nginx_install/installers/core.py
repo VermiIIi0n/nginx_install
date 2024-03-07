@@ -264,13 +264,6 @@ WantedBy=multi-user.target
             "libgeoip-dev", "cmake", "libperl-dev"
         ]
 
-        packages = [
-            p for p in packages
-            if (await ctx.run_cmd(
-                f"dpkg -s {p} | grep '^Status: install ok installed'"))
-            .returncode
-        ]
-
         ctx.logger.debug("%s: Installing packages: %s", self, packages)
         rs = await ctx.run_cmd(f"apt-get install -y {' '.join(packages)}")
 

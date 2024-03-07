@@ -21,7 +21,7 @@ class ZlibCFInstaller(BaseInstaller):
         )
         rs.raise_for_returncode()
 
-        ctx.core.configure_opts.append(f"--with-zlib='{path.resolve()}'")
+        ctx.core.configure_opts.append("--with-zlib=../cloudflare-zlib")
 
     async def build(self, ctx):
         ...

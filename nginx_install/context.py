@@ -72,7 +72,7 @@ class Context:
         self.cfg = cfg
         self.core = cfg.core
         """Same as `cfg.core`, the `NginxInstaller` instance"""
-        self.build_dir = build_dir.resolve()
+        self.build_dir = build_dir
         self.dry_run = dry_run
         self.verbose = verbose
         self.quiet = quiet

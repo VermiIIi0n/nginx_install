@@ -45,8 +45,9 @@ class DynamicResizeTLSInstaller(BaseInstaller):
 
         logger.debug("%s: Applying patch %s", self, pname)
         rs = await ctx.run_cmd(
-            f"cd {ctx.nginx_src_dir} "
-            f"&& patch -f -p1 < {path.resolve() / pname} && cd -")
+            f"patch -f -p1 < ../ngx_http_tls_dyn_size/{pname}",
+            cwd=ctx.nginx_src_dir
+        )
         rs.raise_for_returncode()
 
     async def build(self, ctx):

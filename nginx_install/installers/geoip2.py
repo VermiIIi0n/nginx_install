@@ -60,7 +60,7 @@ class GeoIP2Installer(BaseInstaller):
         )
         rs = await ctx.run_cmd(
             f"tar -xzf '{tar_path}' -C '{ctx.build_dir}' "
-            f"&& cd 'build/libmaxminddb-{v}' "
+            f"&& cd '{ctx.build_dir}/libmaxminddb-{v}' "
             f"&& ./configure {' '.join(self.configure_opts)} "
             f"&& make -j {cpu_count()} "
             "&& make check "
@@ -168,7 +168,8 @@ class GeoIP2Installer(BaseInstaller):
         )
 
         ctx.core.configure_opts.append(
-            f"--add{'-dynamic' if self.dynamic else ''}-module={path.resolve()}"
+            f"--add{'-dynamic' if self.dynamic else ''}-module="
+            "../ngx_http_geoip2_module"
         )
 
     async def build(self, ctx):
