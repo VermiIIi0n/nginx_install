@@ -25,6 +25,9 @@ jobs:
         config: [core, all]
         dynamic: ["true", "false"]
         nginx_version: [mainline]
+        exclude:
+          - config: core
+            dynamic: "true"
 
     steps:
       - uses: actions/checkout@v4
