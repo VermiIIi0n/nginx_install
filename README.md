@@ -84,9 +84,15 @@ To build and install Nginx, use the following command:
 nginx_install install
 ```
 
-**NOTICE: `build` and `install` both delete the previous build directory and create a new one.**
+**`build` and plain `install` both delete the previous build directory and create a new one.**
 
-Currently not supporting cross-compiling. If your target system is the same as the build system, you can copy the build directory to the target system and run `install --no-build` there.
+Currently only partial support for cross-compiling. If your target system is the same as the build system, you can copy the build directory to the target system and run `install --no-build` there.
+
+**Change `-march` in `config.yaml` if your are installing on systems with different CPU**
+
+By default, `core` installer will use `-march=native` flag, this may cause problems on other systems.
+
+Check your `-march` by running `gcc -march=native -Q --help=target | grep march` on your target system and change `-march` in `config.yaml` accordingly.
 
 ### Installed by `git clone`
 
