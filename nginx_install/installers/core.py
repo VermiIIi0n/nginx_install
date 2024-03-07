@@ -233,6 +233,20 @@ WantedBy=multi-user.target
         nginx_version = f"nginx-{semversion}"
         tar_path = ctx.build_dir / f"{nginx_version}.tar.gz"
 
+        ctx.logger.debug("Checking for required packages")
+        rs = await ctx.run_cmd("apt-get update")
+        rs.raise_for_returncode()
+
+        packages = [
+            "build-essential", "ca-certificates", "wget", "curl", "libpcre3",
+            "libpcre3-dev", "autoconf", "unzip", "automake", "libtool", "tar",
+            "git", "libssl-dev", "zlib1g-dev", "uuid-dev", "lsb-release",
+            "libgeoip-dev", "cmake", "libperl-dev"
+        ]
+
+        ctx.logger.debug("%s: Installing packages: %s", self, packages)
+        rs = await ctx.run_cmd(f"apt-get install -y {' '.join(packages)}")
+
         if await ctx.has_core_built():
             ctx.logger.info(
                 "Nginx source has already been built, skipping download")
@@ -252,20 +266,6 @@ WantedBy=multi-user.target
             rs = await ctx.run_cmd(
                 f"mv {ctx.build_dir / nginx_version} {ctx.nginx_src_dir}")
             rs.raise_for_returncode()
-
-        ctx.logger.debug("Checking for required packages")
-        rs = await ctx.run_cmd("apt-get update")
-        rs.raise_for_returncode()
-
-        packages = [
-            "build-essential", "ca-certificates", "wget", "curl", "libpcre3",
-            "libpcre3-dev", "autoconf", "unzip", "automake", "libtool", "tar",
-            "git", "libssl-dev", "zlib1g-dev", "uuid-dev", "lsb-release",
-            "libgeoip-dev", "cmake", "libperl-dev"
-        ]
-
-        ctx.logger.debug("%s: Installing packages: %s", self, packages)
-        rs = await ctx.run_cmd(f"apt-get install -y {' '.join(packages)}")
 
         ctx.logger.info("Nginx preparation completed")
 
