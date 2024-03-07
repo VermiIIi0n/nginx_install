@@ -7,11 +7,13 @@ on:
     paths:
       - nginx_install/**
       - poetry.lock
+      - .github/workflows/ci-workflow.yml
   pull_request:
     branches: [master]
     paths:
       - nginx_install/**
       - poetry.lock
+      - .github/workflows/ci-workflow.yml
 
 jobs:
   build:
@@ -33,20 +35,23 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.10"
             config: all
-            dynamic: "false"
             nginx_version: mainline
           - os: ubuntu-latest
             python-version: "3.11"
             config: all
-            dynamic: "false"
             nginx_version: mainline
           - os: ubuntu-latest
             python-version: "pypy3.10"
             config: all
-            dynamic: "false"
             nginx_version: mainline
           - os: ubuntu-latest
             python-version: "3.12"
+            config: core
+            nginx_version: mainline
+            post_action: "benchmark"
+          - os: ubuntu-latest
+            python-version: "3.12"
+            config: all
             nginx_version: mainline
             post_action: "benchmark"
         exclude:
@@ -79,7 +84,6 @@ jobs:
       - name: Generate config
         run: |
           python ./scripts/congen.py config.yaml ${{ matrix.config }} -v ${{ matrix.nginx_version }}
-        if: matrix.dynamic == 'false'
       - name: Generate config - dynamic
         run: |
           python ./scripts/congen.py config.yaml ${{ matrix.config }} --dynamic -v ${{ matrix.nginx_version }}
@@ -104,7 +108,6 @@ jobs:
       - name: Wet test - combined
         run: |
           sudo -E `which python` -m nginx_install install ./build
-          sudo -E `which python` -m nginx_install uninstall ./build
         # env:
         #   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
         #   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
@@ -121,8 +124,8 @@ jobs:
 
           python ngx_congen.py | sudo tee /etc/nginx/nginx.conf
 
-          sudo systemctl restart nginx
-          sudo systemctl status nginx
+          sudo nginx -t
+          sudo systemctl restart nginx || sudo systemctl status nginx
 
           bash ./benchmark.sh -t 2 -c 400 -d 30s http://sample.com/
           bash ./benchmark.sh -t 2 -c 400 -d 30s https://sample.com/
