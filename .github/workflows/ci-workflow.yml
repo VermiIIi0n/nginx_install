@@ -125,7 +125,7 @@ jobs:
           python ngx_congen.py | sudo tee /etc/nginx/nginx.conf
 
           sudo nginx -t
-          sudo systemctl restart nginx || sudo systemctl status nginx
+          sudo systemctl start nginx || sudo systemctl status nginx
 
           bash ./benchmark.sh -t 2 -c 400 -d 30s http://sample.com/
           bash ./benchmark.sh -t 2 -c 400 -d 30s https://sample.com/

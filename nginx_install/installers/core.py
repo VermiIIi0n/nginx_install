@@ -347,14 +347,13 @@ WantedBy=multi-user.target
         rs = list[Result]()
         for d in (
             self.sbin_path, self.modules_path, self.cache_path,
-            self.error_log_path.parent, self.http_log_path.parent,
-            self.pid_path.parent, self.lock_path.parent
+            self.error_log_path, self.http_log_path,
         ):
             if d.exists():
-                ctx.logger.debug("%s: Removing directory %s", self, d)
+                ctx.logger.debug("%s: Removing location %s", self, d)
                 rs.append(await ctx.run_cmd(f"rm -rf {d}"))
                 continue
-            ctx.logger.debug("%s: Directory %s does not exist", self, d)
+            ctx.logger.debug("%s: Location %s does not exist", self, d)
 
         for r in rs:
             r.raise_for_returncode()
