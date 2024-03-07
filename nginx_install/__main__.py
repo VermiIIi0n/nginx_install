@@ -134,7 +134,7 @@ async def main() -> int:
     finally:
         if build_dir.exists():
             rs = await ctx.run_cmd(
-                f"chown -R {args.user} {build_dir}")
+                f"chown -R {args.user}:{args.user} {build_dir}")
 
     return 0
 

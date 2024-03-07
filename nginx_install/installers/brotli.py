@@ -10,16 +10,16 @@ class BrotliInstaller(BaseInstaller):
         path = ctx.build_dir / "ngx_brotli"
         logger.debug("%s: Cloning Brotli into %s", self, path)
 
+        rs = await ctx.run_cmd(
+            "apt-get install -y libbrotli-dev"
+        )
+        rs.raise_for_returncode()
+
         await ctx.git_clone(
             "https://github.com/google/ngx_brotli.git",
             path,
             title="Clone Brotli",
         )
-
-        rs = await ctx.run_cmd(
-            "apt-get install -y libbrotli-dev"
-        )
-        rs.raise_for_returncode()
 
         rs = await ctx.run_cmd(
             f"cd '{path}' && git submodule update --init --recursive && cd -"

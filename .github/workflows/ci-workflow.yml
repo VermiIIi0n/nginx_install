@@ -13,10 +13,6 @@ on:
       - "**.py"
       - poetry.lock
 
-# env:
-#   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
-#   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
-
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -24,7 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, ubuntu-22.04, ubuntu-20.04]
         python-version: ["3.12"]
-        config: [all]
+        config: [core, all]
         dynamic: ["false"]
         nginx_version: [mainline, stable]
         include:
@@ -100,6 +96,9 @@ jobs:
         run: |
           sudo -E `which python` -m nginx_install install ./build
           sudo -E `which python` -m nginx_install uninstall ./build
+        # env:
+        #   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
+        #   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
     # - name: Upload coverage result
     #   env:
     #     COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}

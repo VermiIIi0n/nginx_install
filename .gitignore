@@ -4,6 +4,7 @@ workflow.*
 *.yaml
 !vermils_config.yaml
 build/
+build.*
 **/test.*
 
 # Byte-compiled / optimized / DLL files
