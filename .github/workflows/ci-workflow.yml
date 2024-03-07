@@ -5,12 +5,12 @@ on:
     branches:
       - master
     paths:
-      - "**.py"
+      - nginx_install/**
       - poetry.lock
   pull_request:
     branches: [master]
     paths:
-      - "**.py"
+      - nginx_install/**
       - poetry.lock
 
 jobs:

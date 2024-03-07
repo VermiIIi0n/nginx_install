@@ -6,6 +6,10 @@ class BrotliInstaller(BaseInstaller):
     enabled: bool = False
     dynamic: bool = False
 
+    @property
+    def ngx_modulename(self) -> str:
+        return "ngx_http_brotli_static_module"
+
     async def prepare(self, ctx):
         logger = ctx.logger
         path = ctx.build_dir / "ngx_brotli"

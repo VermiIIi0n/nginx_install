@@ -5,6 +5,10 @@ class HeadersMoreInstaller(BaseInstaller):
     enabled: bool = False
     dynamic: bool = False
 
+    @property
+    def ngx_modulename(self) -> str:
+        return "ngx_http_headers_more_filter_module"
+
     async def prepare(self, ctx):
         logger = ctx.logger
         path = ctx.build_dir / "headers-more-nginx-module"

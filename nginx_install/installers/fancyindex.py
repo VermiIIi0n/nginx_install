@@ -5,6 +5,10 @@ class FancyIndexInstaller(BaseInstaller):
     enabled: bool = False
     dynamic: bool = False
 
+    @property
+    def ngx_modulename(self) -> str:
+        return "ngx_http_fancyindex_module"
+
     async def prepare(self, ctx):
         logger = ctx.logger
         logger.debug("%s: Preparing FancyIndex installer", self)
