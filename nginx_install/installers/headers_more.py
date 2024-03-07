@@ -13,6 +13,7 @@ class HeadersMoreInstaller(BaseInstaller):
         logger = ctx.logger
         path = ctx.build_dir / "headers-more-nginx-module"
         logger.debug("%s: Cloning Headers More into %s", self, path)
+        task = ctx.progress.add_task("Prepare Headers More", total=1)
 
         await ctx.git_clone(
             "https://github.com/openresty/headers-more-nginx-module.git",
@@ -24,6 +25,8 @@ class HeadersMoreInstaller(BaseInstaller):
             f"--add{'-dynamic' if self.dynamic else ''}-module="
             "../headers-more-nginx-module"
         )
+
+        ctx.progress.update(task, advance=1)
 
     async def build(self, ctx):
         ...

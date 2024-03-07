@@ -11,9 +11,11 @@ class DynamicResizeTLSInstaller(BaseInstaller):
 
     async def prepare(self, ctx):
         logger = ctx.logger
+        task = ctx.progress.add_task("Prepare DRR TLS", total=2)
 
         if await ctx.has_core_built():
             logger.debug("%s: Core already built", self)
+            ctx.progress.update(task, advance=2)
             return
 
         path = ctx.build_dir / "ngx_http_tls_dyn_size"
@@ -25,6 +27,8 @@ class DynamicResizeTLSInstaller(BaseInstaller):
             title="Clone DRR TLS",
             run_in_dry=True,
         )
+
+        ctx.progress.update(task, advance=1)
 
         v_sheet = await ctx.core.get_versions(ctx.client)
         target_v = v_sheet.get_matching_version(ctx.core.nginx_version)
@@ -49,6 +53,8 @@ class DynamicResizeTLSInstaller(BaseInstaller):
             cwd=ctx.nginx_src_dir
         )
         rs.raise_for_returncode()
+
+        ctx.progress.update(task, advance=1)
 
     async def build(self, ctx):
         ...

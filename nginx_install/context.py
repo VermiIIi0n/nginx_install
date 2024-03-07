@@ -5,6 +5,7 @@ import logging
 import asyncio
 from typing import TYPE_CHECKING
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
 from urllib.request import getproxies
 from rich.progress import Progress
 from vermils.io import aio
@@ -108,6 +109,8 @@ class Context:
         if not quiet:
             self.progress.start()
 
+        self._executor = ThreadPoolExecutor(max_workers=32)
+
     @property
     def nginx_src_dir(self) -> Path:
         return self.build_dir / "nginx"
@@ -137,7 +140,7 @@ class Context:
         """
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
-            None,
+            self._executor,
             lambda: self.sync_run_cmd(
                 cmds, cwd, shell=shell, run_in_dry=run_in_dry, **kw
             )

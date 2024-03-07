@@ -147,6 +147,7 @@ class GeoIP2Installer(BaseInstaller):
     async def prepare(self, ctx):
         logger = ctx.logger
         logger.debug("%s: Preparing GeoIP2 installer", self)
+        task = ctx.progress.add_task("Prepare GeoIP2", total=3)
 
         account_id = os.environ.get("MAXMIND_ID", self.account_id)
         license_key = os.environ.get("MAXMIND_KEY", self.license_key)
@@ -154,9 +155,13 @@ class GeoIP2Installer(BaseInstaller):
         await self._build_maxminddb(ctx)
         edition_ids = await self._get_db(ctx, account_id, license_key)
 
+        ctx.progress.update(task, advance=1)
+
         if edition_ids and self.enable_auto_update:
             await self._enable_auto_update(
                 ctx, account_id, license_key, edition_ids)
+
+        ctx.progress.update(task, advance=1)
 
         # Download module source
         path = ctx.build_dir / "ngx_http_geoip2_module"
@@ -172,6 +177,8 @@ class GeoIP2Installer(BaseInstaller):
             "../ngx_http_geoip2_module"
         )
 
+        ctx.progress.update(task, advance=1)
+
     async def build(self, ctx):
         ...
 
@@ -179,10 +186,12 @@ class GeoIP2Installer(BaseInstaller):
         ...
 
     async def uninstall(self, ctx):
+        task = ctx.progress.add_task("Uninstall GeoIP2", total=1)
         ctx.print(f"{self}: Cannot determine dependencies to clean. "
                   "You may need to mannually remove "
                   f"{self.database_dir}, /etc/cron.d/geoipupdate, {self.conf_path}, "
                   "geoipupdate and /usr/local/lib/libmaxminddb.so")
+        ctx.progress.update(task, advance=1)
 
     async def clean(self, ctx):
         ...

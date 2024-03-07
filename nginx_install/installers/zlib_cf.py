@@ -7,6 +7,7 @@ class ZlibCFInstaller(BaseInstaller):
     async def prepare(self, ctx):
         logger = ctx.logger
         logger.debug("%s: Preparing Zlib Cloudflare installer", self)
+        task = ctx.progress.add_task("Prepare Zlib Cloudflare", total=2)
 
         path = ctx.build_dir / "cloudflare-zlib"
 
@@ -15,6 +16,8 @@ class ZlibCFInstaller(BaseInstaller):
             path,
         )
 
+        ctx.progress.update(task, advance=1)
+
         rs = await ctx.run_cmd(
             "./configure",
             cwd=path.resolve(),
@@ -22,6 +25,7 @@ class ZlibCFInstaller(BaseInstaller):
         rs.raise_for_returncode()
 
         ctx.core.configure_opts.append("--with-zlib=../cloudflare-zlib")
+        ctx.progress.update(task, advance=1)
 
     async def build(self, ctx):
         ...

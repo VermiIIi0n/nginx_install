@@ -49,9 +49,6 @@ async def main() -> int:  # skipcq: PY-R1000
         build_dir = Path(tempfile.mkdtemp())
     else:
         build_dir = Path(args.build_dir)
-        if build_dir.exists() and (not args.no_build or args.keep_build):
-            shutil.rmtree(build_dir)
-        build_dir.mkdir(exist_ok=True)
 
     config_path = Path(args.config)
     if not config_path.exists():
@@ -71,6 +68,10 @@ async def main() -> int:  # skipcq: PY-R1000
         fwd_args = ["sudo", "-E", sys.executable, *sys.argv, "-u", args.user]
         os.execlpe("/usr/bin/sudo", *fwd_args, os.environ)
 
+    if build_dir.exists() and (not args.no_build or args.keep_build):
+        shutil.rmtree(build_dir)
+    build_dir.mkdir(exist_ok=True)
+
     config = Config.model_validate(yaml.safe_load(config_path.read_text()))
     ctx = Context(config, build_dir, args.dry, args.verbose, args.quiet)
     ctx.logger.debug("All extra installers in config: %s", config.installers)
@@ -79,27 +80,22 @@ async def main() -> int:  # skipcq: PY-R1000
 
     try:
         if action in ("prepare", "install", "build"):
-            ctx.print("Preparation started...")
             await config.core.prepare(ctx)
             await asyncio.gather(*(i.prepare(ctx) for i in installers))
 
         if action in ("install", "build") and not args.no_build:
-            ctx.print("Building started...")
             await config.core.build(ctx)
             await asyncio.gather(*(i.build(ctx) for i in installers))
 
         if action == "install":
-            ctx.print("Installation started...")
             await config.core.install(ctx)
             await asyncio.gather(*(i.install(ctx) for i in installers))
 
         if action == "uninstall":
-            ctx.print("Uninstallation started...")
             await config.core.uninstall(ctx)
             await asyncio.gather(*(i.uninstall(ctx) for i in config.installers))
 
         if action in ("clean", "install", "uninstall") and not args.keep_build:
-            ctx.print("Cleaning up...")
             await config.core.clean(ctx)
             await asyncio.gather(*(i.clean(ctx) for i in config.installers))
 
@@ -135,6 +131,7 @@ async def main() -> int:  # skipcq: PY-R1000
                 return 1
 
     finally:
+        ctx.progress.refresh()
         if build_dir.exists():
             rs = await ctx.run_cmd(
                 f"chown -R {args.user}:{args.user} {build_dir}")

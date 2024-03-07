@@ -12,12 +12,15 @@ class OpenSSLInstaller(BaseInstaller):
         logger = ctx.logger
         logger.debug("%s: Preparing OpenSSL installer", self)
         client = ctx.client
+        task = ctx.progress.add_task("Prepare OpenSSL", total=4)
 
         r = await client.get(
             "https://github.com/openssl/openssl/releases/latest",
             follow_redirects=True,
         )
         r.raise_for_status()
+
+        ctx.progress.update(task, advance=1)
 
         soup = bs4.BeautifulSoup(r.content, "lxml")
         v = ''
@@ -38,10 +41,14 @@ class OpenSSLInstaller(BaseInstaller):
             title="Get openssl source",
         )
 
+        ctx.progress.update(task, advance=1)
+
         rs = await ctx.run_cmd(
             f"tar -xzf '{fpath}' -C '{ctx.build_dir}'",
         )
         rs.raise_for_returncode()
+
+        ctx.progress.update(task, advance=1)
 
         dpath = ctx.build_dir / f"openssl-{v}"
         rs = await ctx.run_cmd(
@@ -50,6 +57,7 @@ class OpenSSLInstaller(BaseInstaller):
         rs.raise_for_returncode()
 
         ctx.core.configure_opts.append(f"--with-openssl=../openssl-{v}")
+        ctx.progress.update(task, advance=1)
 
     async def build(self, ctx):
         ...

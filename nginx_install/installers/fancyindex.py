@@ -11,6 +11,7 @@ class FancyIndexInstaller(BaseInstaller):
 
     async def prepare(self, ctx):
         logger = ctx.logger
+        task = ctx.progress.add_task("Prepare FancyIndex", total=1)
         logger.debug("%s: Preparing FancyIndex installer", self)
 
         path = ctx.build_dir / "ngx-fancyindex"
@@ -25,6 +26,8 @@ class FancyIndexInstaller(BaseInstaller):
         ctx.core.configure_opts.append(
             f"--add{'-dynamic' if self.dynamic else ''}-module=../ngx-fancyindex"
         )
+
+        ctx.progress.update(task, advance=1)
 
     async def build(self, ctx):
         ...

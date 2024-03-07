@@ -218,6 +218,8 @@ WantedBy=multi-user.target
 
     async def prepare(self, ctx: Context):
         ctx.logger.info("Start preparing nginx")
+        task = ctx.progress.add_task("Prepare core", total=3)
+
         v_sheet = await self.get_versions(ctx.client)
         ctx.logger.debug(
             "Versions: %s (mainline), %s (stable), %s (legacies)",
@@ -233,6 +235,8 @@ WantedBy=multi-user.target
         nginx_version = f"nginx-{semversion}"
         tar_path = ctx.build_dir / f"{nginx_version}.tar.gz"
 
+        ctx.progress.update(task, advance=1)
+
         ctx.logger.debug("Checking for required packages")
         rs = await ctx.run_cmd("apt-get update")
         rs.raise_for_returncode()
@@ -246,6 +250,8 @@ WantedBy=multi-user.target
 
         ctx.logger.debug("%s: Installing packages: %s", self, packages)
         rs = await ctx.run_cmd(f"apt-get install -y {' '.join(packages)}")
+
+        ctx.progress.update(task, advance=1)
 
         if await ctx.has_core_built():
             ctx.logger.info(
@@ -268,21 +274,28 @@ WantedBy=multi-user.target
             rs.raise_for_returncode()
 
         ctx.logger.info("Nginx preparation completed")
+        ctx.progress.update(task, advance=1)
 
     async def build(self, ctx: Context):
         ctx.logger.info("Start building nginx")
+        task = ctx.progress.add_task("Build core", total=2)
         rs = await ctx.run_cmd(
             f"./configure {' '.join(self.build_options)}",
             cwd=str(ctx.nginx_src_dir)
         )
+
+        ctx.progress.update(task, advance=1)
+
         rs.raise_for_returncode()
         rs = await ctx.run_cmd(f"make -j {mp.cpu_count()}", cwd=str(ctx.nginx_src_dir))
         rs.raise_for_returncode()
 
         ctx.logger.info("Nginx build completed")
+        ctx.progress.update(task, advance=1)
 
     async def install(self, ctx: Context):
         ctx.logger.info("Start installing nginx")
+        task = ctx.progress.add_task("Install core", total=3)
         rs = await ctx.run_cmd("make install", cwd=str(ctx.nginx_src_dir))
         rs.raise_for_returncode()
 
@@ -314,6 +327,8 @@ WantedBy=multi-user.target
                 "%s: Creating conf.d directory at %s", self, confd)
             confd.mkdir(exist_ok=True)
 
+        ctx.progress.update(task, advance=1)
+
         if (await ctx.run_cmd(f"getent group {self.group}")).failed:
             ctx.logger.debug("%s: Creating group %s", self, self.group)
             rs = await ctx.run_cmd(f"addgroup {self.group}")
@@ -329,19 +344,25 @@ WantedBy=multi-user.target
         rs = await ctx.run_cmd(f"usermod -aG {self.group} {self.user}")
         rs.raise_for_returncode()
 
+        ctx.progress.update(task, advance=1)
+
         ctx.logger.debug("Enabling nginx service")
         rs = await ctx.run_cmd("systemctl enable nginx")
         rs.raise_for_returncode()
 
         ctx.logger.info("Nginx installation completed")
+        ctx.progress.update(task, advance=1)
 
     async def uninstall(self, ctx: Context):
         ctx.logger.info("Start uninstalling nginx")
         rs = list[Result]()
-        for d in (
+        paths = (
             self.sbin_path, self.modules_path, self.cache_path,
             self.error_log_path, self.http_log_path,
-        ):
+        )
+        task = ctx.progress.add_task("Uninstall core", total=len(paths))
+        for d in paths:
+            ctx.progress.update(task, advance=1)
             if d.exists():
                 ctx.logger.debug("%s: Removing location %s", self, d)
                 rs.append(await ctx.run_cmd(f"rm -rf {d}"))
@@ -355,9 +376,11 @@ WantedBy=multi-user.target
 
     async def clean(self, ctx: Context):
         ctx.logger.info("Start cleaning nginx")
+        task = ctx.progress.add_task("Clean core", total=1)
         if ctx.build_dir.exists():
             ctx.logger.debug("%s: Removing directory %s", self, ctx.build_dir)
             rs = await ctx.run_cmd(f"rm -rf {ctx.build_dir}")
             rs.raise_for_returncode()
 
         ctx.logger.info("Nginx cleaning completed")
+        ctx.progress.update(task, advance=1)
