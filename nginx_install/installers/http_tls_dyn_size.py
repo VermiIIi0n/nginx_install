@@ -1,6 +1,5 @@
 import re
 from os.path import relpath
-from pathlib import Path
 from semantic_version import Version
 from vermils.io import aio
 from .base import BuiltinInstaller
