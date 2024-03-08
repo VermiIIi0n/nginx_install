@@ -1,5 +1,6 @@
 import bs4
 import re
+from os.path import relpath
 from .base import BuiltinInstaller
 
 ver_re = re.compile(r".*?(\d+\.\d+\.\d+)$")
@@ -56,7 +57,8 @@ class OpenSSLInstaller(BuiltinInstaller):
         )
         rs.raise_for_returncode()
 
-        ctx.core.configure_opts.append(f"--with-openssl=../openssl-{v}")
+        ctx.core.configure_opts.append(
+            f"--with-openssl={relpath(dpath, ctx.nginx_src_dir)}")
         ctx.progress.update(task, advance=1)
 
     async def build(self, ctx):

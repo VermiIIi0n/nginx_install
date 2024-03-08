@@ -1,3 +1,4 @@
+from os.path import relpath
 from .base import BuiltinInstaller
 
 
@@ -24,7 +25,8 @@ class ZlibCFInstaller(BuiltinInstaller):
         )
         rs.raise_for_returncode()
 
-        ctx.core.configure_opts.append("--with-zlib=../cloudflare-zlib")
+        ctx.core.configure_opts.append(
+            f"--with-zlib={relpath(path, ctx.nginx_src_dir)}")
         ctx.progress.update(task, advance=1)
 
     async def build(self, ctx):

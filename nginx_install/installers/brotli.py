@@ -1,3 +1,4 @@
+from os.path import relpath
 from .base import BuiltinInstaller
 
 
@@ -42,7 +43,8 @@ class BrotliInstaller(BuiltinInstaller):
             rs.raise_for_returncode()
 
         ctx.core.configure_opts.append(
-            f"--add{'-dynamic' if self.dynamic else ''}-module=../ngx_brotli"
+            f"--add{'-dynamic' if self.dynamic else ''}-module="
+            f"{relpath(path, ctx.nginx_src_dir)}"
         )
 
         ctx.progress.update(task, advance=1)

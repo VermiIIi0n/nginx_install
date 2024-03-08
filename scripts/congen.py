@@ -16,6 +16,7 @@ parser.add_argument("-v", "--version", type=str,
                     help="Version spec of the the nginx to install", default="mainline")
 parser.add_argument("--dynamic", action="store_true",
                     help="Enable dynamic modules")
+parser.add_argument("--flavor", type=str, choices=["vanilla", "openresty"], default="vanilla",)
 
 args = parser.parse_args()
 path = Path(args.output)
@@ -29,6 +30,7 @@ if args.config is not None:
         yaml.safe_load(Path(args.config).read_text()))
 
 cfg.core.nginx_version = args.version
+cfg.core.flavor = args.flavor
 
 for i in cfg.installers:
     classname = i.classname.lower()

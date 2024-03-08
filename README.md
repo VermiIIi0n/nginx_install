@@ -12,6 +12,8 @@ This script is designed to install Nginx on modern Ubuntu, other Debian-based sy
 - [fancyindex](https://github.com/aperezdc/ngx-fancyindex)
 - OpenSSL from source
 - [Zlib-Cloudflare](https://github.com/cloudflare/zlib) from source
+- [Substitutions Filter](https://github.com/yaoweibin/ngx_http_substitutions_filter_module)
+- [Development Kit](https://github.com/vision5/ngx_devel_kit)
 
 Go to discussions to request more modules.
 
@@ -126,6 +128,7 @@ If `-q`/`--quiet` is specified, the script will not ask you to create one and wi
 Useful options in `config.yaml`:
 
 - `version`: The version of Nginx to be installed. Can be `stable`, `mainline`, `latest`, or a simple spec version (e.g. `1.21.3`, `^1.24.0`, `<=1.26.0`).
+- `core.flavor`: Can be vanilla and openresty
 - `pymodule_paths`: A list of paths to Python modules. Convenient for adding custom `Installer` classes.
 
 ## Customization

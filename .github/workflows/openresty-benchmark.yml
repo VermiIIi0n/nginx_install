@@ -1,0 +1,96 @@
+name: OpenResty Benchmark
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+    paths:
+      - nginx_install/**
+      - poetry.lock
+      - pyproject.toml
+      - .github/workflows/openresty-benchmark.yml
+  pull_request:
+    branches: [master]
+    paths:
+      - nginx_install/**
+      - poetry.lock
+      - pyproject.toml
+      - .github/workflows/openresty-benchmark.yml
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.12"]
+        config: [core, all]
+        dynamic: ["true", "false"]
+        exclude:
+          - config: core
+            dynamic: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install -U poetry
+          poetry install
+      - name: pip install
+        run: |
+          poetry build
+          pip install ./
+      - name: Generate config
+        run: |
+          python ./scripts/congen.py config.yaml ${{ matrix.config }} --flavor openresty
+      - name: Generate config - dynamic
+        run: |
+          python ./scripts/congen.py config.yaml ${{ matrix.config }} --dynamic --flavor openresty
+        if: matrix.dynamic == 'true'
+      - name: Copy geoip2 database
+        run: |
+          sudo tar -xvf ./scripts/GeoIP.tar.gz -C /usr/local/share/
+          sudo tar -xvf ./scripts/city.tar.gz -C /usr/local/share/GeoIP/
+      - name: Build and install
+        run: |
+          sudo -E `which python` -m nginx_install install
+        # env:
+        #   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
+        #   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
+      - name: Benchmark Preparation
+        run: |
+          cd ./scripts/
+          echo "127.0.0.1 sample.com" | sudo tee -a /etc/hosts
+
+          sudo bash ./issue_ssl.sh
+
+          sudo mkdir -p /var/www/
+          sudo tar -xzf ./sample.tar.gz -C /var/www/
+          sudo chown -R www-data:www-data /var/www/sample
+
+          python ngx_congen.py | sudo tee /etc/nginx/nginx.conf
+
+          sudo nginx -t
+          sudo systemctl start nginx || sudo systemctl status nginx
+      - name: Benchmark
+        run: |
+          cd ./scripts/
+          echo "Benchmarking HTTP"
+          bash ./benchmark.sh -t 2 -c 400 -d 30s http://sample.com/
+          echo "----------------------------------------"
+          echo "Benchmarking HTTPS"
+          bash ./benchmark.sh -t 2 -c 400 -d 30s https://sample.com/
+    # - name: Upload coverage result
+    #   env:
+    #     COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+    #   run: |
+    #      if [ -n "${COVERALLS_REPO_TOKEN}" ]; then
+    #         poetry run coveralls
+    #      fi
+    #   if: ${{ matrix.os == 'ubuntu-latest' && contains(matrix.python-version, '3.12') }}

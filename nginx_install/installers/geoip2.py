@@ -2,6 +2,7 @@ import bs4
 import re
 import asyncio
 import os
+from os.path import relpath
 from multiprocessing import cpu_count
 from pathlib import Path
 from vermils.io import aio
@@ -174,7 +175,7 @@ class GeoIP2Installer(BuiltinInstaller):
 
         ctx.core.configure_opts.append(
             f"--add{'-dynamic' if self.dynamic else ''}-module="
-            "../ngx_http_geoip2_module"
+            f"{relpath(path, ctx.nginx_src_dir)}"
         )
 
         ctx.progress.update(task, advance=1)

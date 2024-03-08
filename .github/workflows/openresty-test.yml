@@ -1,21 +1,22 @@
-name: Python CI
+name: OpenResty CI
 
 on:
   push:
     branches:
       - master
+      - dev
     paths:
       - nginx_install/**
       - poetry.lock
       - pyproject.toml
-      - .github/workflows/ci-workflow.yml
+      - .github/workflows/openresty-test.yml
   pull_request:
     branches: [master]
     paths:
       - nginx_install/**
       - poetry.lock
       - pyproject.toml
-      - .github/workflows/ci-workflow.yml
+      - .github/workflows/openresty-test.yml
 
 jobs:
   build:
@@ -26,25 +27,11 @@ jobs:
         python-version: ["3.12"]
         config: [core, all]
         dynamic: ["false"]
-        nginx_version: [mainline, stable]
         include:
           - os: ubuntu-latest
             python-version: "3.12"
             config: all
             dynamic: "true"
-            nginx_version: mainline
-          - os: ubuntu-latest
-            python-version: "3.10"
-            config: all
-            nginx_version: mainline
-          - os: ubuntu-latest
-            python-version: "3.11"
-            config: all
-            nginx_version: mainline
-          - os: ubuntu-latest
-            python-version: "pypy3.10"
-            config: all
-            nginx_version: mainline
         exclude:
           - config: core
             dynamic: "true"
@@ -74,10 +61,10 @@ jobs:
           pip install ./
       - name: Generate config
         run: |
-          python ./scripts/congen.py config.yaml ${{ matrix.config }} -v ${{ matrix.nginx_version }}
+          python ./scripts/congen.py config.yaml ${{ matrix.config }} --flavor openresty
       - name: Generate config - dynamic
         run: |
-          python ./scripts/congen.py config.yaml ${{ matrix.config }} --dynamic -v ${{ matrix.nginx_version }}
+          python ./scripts/congen.py config.yaml ${{ matrix.config }} --dynamic --flavor openresty
         if: matrix.dynamic == 'true'
       - name: Copy geoip2 database
         run: |

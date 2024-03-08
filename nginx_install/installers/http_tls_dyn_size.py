@@ -1,4 +1,6 @@
 import re
+from os.path import relpath
+from pathlib import Path
 from semantic_version import Version
 from vermils.io import aio
 from .base import BuiltinInstaller
@@ -48,9 +50,18 @@ class DynamicResizeTLSInstaller(BuiltinInstaller):
         _, pname = max(versions)
 
         logger.debug("%s: Applying patch %s", self, pname)
+        path = ctx.build_dir / "ngx_http_tls_dyn_size"
+        anchor = ctx.nginx_src_dir
+        if ctx.core.flavor == "openresty" and not ctx.dry_run:
+            anchor = anchor / "bundle"
+            for i in await aio.os.listdir(anchor):
+                if re.match(r"^nginx\-\d+\.\d+\.\d+$", i):
+                    anchor = anchor / i
+                    break
+        path = relpath(path, anchor)
         rs = await ctx.run_cmd(
-            f"patch -f -p1 < ../ngx_http_tls_dyn_size/{pname}",
-            cwd=ctx.nginx_src_dir
+            f"patch -f -p1 < {path}/{pname}",
+            cwd=anchor
         )
         rs.raise_for_returncode()
 

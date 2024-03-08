@@ -75,9 +75,11 @@ async def main() -> int:  # skipcq: PY-R1000
     config = Config.model_validate(yaml.safe_load(config_path.read_text()))
     ctx = Context(config, build_dir, args.dry,
                   args.verbose, args.quiet, args.user)
-    ctx.logger.debug("All extra installers in config: %s", config.installers)
-    installers = [i for i in config.installers if i.enabled]
-    ctx.logger.info("Enabled extra installers %s", installers)
+    logger = ctx.logger
+    logger.debug("All extra installers in config: %s", config.installers)
+    config.installers = [i for i in config.installers if i.enabled]
+    installers = config.installers
+    logger.info("Enabled extra installers %s", installers)
 
     try:
         if action in ("prepare", "install", "build"):
@@ -104,17 +106,17 @@ async def main() -> int:  # skipcq: PY-R1000
 
     except CalledProcessError as e:
         err_msg = f"Command {e.cmd} returned status {e.returncode}, error: {e.stderr}"
-        ctx.logger.critical(err_msg)
+        logger.critical(err_msg)
         sys.stderr.write(err_msg)
-        ctx.logger.exception(e)
-        ctx.logger.debug("Error output: %s", e.output)
+        logger.exception(e)
+        logger.debug("Error output: %s", e.output)
         return 1
 
     except Exception as e:
         err_msg = f"An error occurred: {e}"
-        ctx.logger.critical(err_msg)
+        logger.critical(err_msg)
         sys.stderr.write(err_msg)
-        ctx.logger.exception(e)
+        logger.exception(e)
         return 1
 
     else:
