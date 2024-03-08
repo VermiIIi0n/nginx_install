@@ -1,4 +1,3 @@
-from vermils.io import aio
 from .base import BaseInstaller
 
 
@@ -24,17 +23,21 @@ class BrotliInstaller(BaseInstaller):
 
         ctx.progress.update(task, advance=1)
 
-        if not await aio.path.exists(path):
-            # git complains if existing repo is not owned by the user
-            # so skip clone and submodule update if the directory exists
-            await ctx.git_clone(
-                "https://github.com/google/ngx_brotli.git",
-                path,
-                title="Clone Brotli",
-            )
+        await ctx.git_clone(
+            "https://github.com/google/ngx_brotli.git",
+            path,
+            title="Clone Brotli",
+        )
 
+        rs = await ctx.run_cmd(
+            "git submodule update --init --recursive",
+            cwd=path.resolve(),
+        )
+        if rs.failed:  # may be a git permission error?
             rs = await ctx.run_cmd(
-                f"cd '{path}' && git submodule update --init --recursive && cd -"
+                "git submodule update --init --recursive",
+                cwd=path.resolve(),
+                user=ctx.user,
             )
             rs.raise_for_returncode()
 

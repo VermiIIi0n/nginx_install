@@ -158,7 +158,9 @@ The `context` parameter is a dictionary containing the following attributes:
 - `cfg`: The `Config` object from the `config.yaml` file.
 - `core`: The `NginxInstaller` object.
 - `verbose`: A boolean value indicating whether to print verbose information.
+- `quiet`: A boolean value indicating whether to print nothing unless an error occurs.
 - `dry_run`: A boolean value indicating whether to run the script in dry-run mode. You should respect this value in your custom installers. Don't actually change anything if `dry_run` is `True`.
+- `user`: The user who started the script.
 - `client`: A `httpx.AsyncClient` object. You can use it to download files from the internet.
 - `logger`: You can use it to log information.
 - `progress`: A `rich.progress.Progress` object. You can use it to show a progress bar.

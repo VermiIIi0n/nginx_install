@@ -1,42 +1,14 @@
-from .base import BaseInstaller
+from pydantic import Field
+from .general_git import GeneralGitInstaller
 
 
-class FancyIndexInstaller(BaseInstaller):
+class FancyIndexInstaller(GeneralGitInstaller):
     enabled: bool = False
     dynamic: bool = False
-
-    @property
-    def ngx_modulenames(self) -> tuple[str, ...]:
-        return ("ngx_http_fancyindex_module",)
-
-    async def prepare(self, ctx):
-        logger = ctx.logger
-        task = ctx.progress.add_task("Prepare FancyIndex", total=1)
-        logger.debug("%s: Preparing FancyIndex installer", self)
-
-        path = ctx.build_dir / "ngx-fancyindex"
-        logger.debug("%s: Cloning FancyIndex into %s", self, path)
-
-        await ctx.git_clone(
-            "https://github.com/aperezdc/ngx-fancyindex.git",
-            path,
-            title="Clone FancyIndex",
-        )
-
-        ctx.core.configure_opts.append(
-            f"--add{'-dynamic' if self.dynamic else ''}-module=../ngx-fancyindex"
-        )
-
-        ctx.progress.update(task, advance=1)
-
-    async def build(self, ctx):
-        ...
-
-    async def install(self, ctx):
-        ...
-
-    async def uninstall(self, ctx):
-        ...
-
-    async def clean(self, ctx):
-        ...
+    name: str = Field(default="ngx-fancyindex", exclude=True)
+    post_cmds: list = Field(
+        default_factory=list, exclude=True)
+    url: str = Field(
+        default="https://github.com/aperezdc/ngx-fancyindex.git", exclude=True)
+    ngx_modulenames: list = Field(
+        default_factory=lambda: ["ngx_http_fancyindex_module"], exclude=True)

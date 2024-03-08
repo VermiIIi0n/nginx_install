@@ -1,6 +1,7 @@
 import yaml
 import argparse
 from pathlib import Path
+from nginx_install.installers import GeneralGitInstaller
 from nginx_install.config import Config
 from nginx_install.utils import model_dump_yaml
 
@@ -31,8 +32,15 @@ cfg.core.nginx_version = args.version
 
 for i in cfg.installers:
     classname = i.classname.lower()
-    if "all" in mods or classname in mods or f"{classname}installer" in mods:
+    if (
+        "all" in mods
+        or classname in mods
+        or f"{classname}installer" in mods
+        or (hasattr(i, "name") and i.name.lower() in mods)
+    ):
         i.enabled = True
+        if isinstance(i, GeneralGitInstaller):
+            i.enabled = bool(i.url)
     if hasattr(i, "dynamic"):
         i.dynamic = args.dynamic
 

@@ -7,6 +7,7 @@ from .fancyindex import FancyIndexInstaller
 from .http_tls_dyn_size import DynamicResizeTLSInstaller
 from .brotli import BrotliInstaller
 from .geoip2 import GeoIP2Installer
+from .general_git import GeneralGitInstaller
 
 _non_core_installer_types: list[type] = [
     OpenSSLInstaller,
@@ -16,6 +17,7 @@ _non_core_installer_types: list[type] = [
     BrotliInstaller,
     GeoIP2Installer,
     ZlibCFInstaller,
+    GeneralGitInstaller,
 ]
 
 __all__ = [
@@ -28,6 +30,7 @@ __all__ = [
     "DynamicResizeTLSInstaller",
     "BrotliInstaller",
     "GeoIP2Installer",
+    "GeneralGitInstaller",
     "from_dict",
     "_non_core_installer_types",
 ]

@@ -73,7 +73,8 @@ async def main() -> int:  # skipcq: PY-R1000
     build_dir.mkdir(exist_ok=True)
 
     config = Config.model_validate(yaml.safe_load(config_path.read_text()))
-    ctx = Context(config, build_dir, args.dry, args.verbose, args.quiet)
+    ctx = Context(config, build_dir, args.dry,
+                  args.verbose, args.quiet, args.user)
     ctx.logger.debug("All extra installers in config: %s", config.installers)
     installers = [i for i in config.installers if i.enabled]
     ctx.logger.info("Enabled extra installers %s", installers)
@@ -134,7 +135,7 @@ async def main() -> int:  # skipcq: PY-R1000
         ctx.progress.refresh()
         if build_dir.exists():
             rs = await ctx.run_cmd(
-                f"chown -R {args.user}:{args.user} {build_dir}")
+                f"chown -R {ctx.user}:{ctx.user} {build_dir}")
 
     return 0
 

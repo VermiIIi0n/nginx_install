@@ -5,6 +5,7 @@ import logging
 import asyncio
 from typing import TYPE_CHECKING
 from pathlib import Path
+from getpass import getuser
 from concurrent.futures import ThreadPoolExecutor
 from urllib.request import getproxies
 from rich.progress import Progress
@@ -67,7 +68,8 @@ class Context:
             build_dir: Path,
             dry_run: bool,
             verbose: bool,
-            quiet: bool
+            quiet: bool,
+            user: str,
     ):
         self.cfg = cfg
         self.core = cfg.core
@@ -76,6 +78,8 @@ class Context:
         self.dry_run = dry_run
         self.verbose = verbose
         self.quiet = quiet
+        self.user = user
+        """User who runs the script"""
 
         proxy = cfg.network.proxy
         sys_proxies = getproxies()
@@ -126,6 +130,7 @@ class Context:
         *,
         shell: bool = True,
         run_in_dry: bool = False,
+        user: str | None = None,
         **kw
     ):
         """
@@ -142,7 +147,9 @@ class Context:
         return await loop.run_in_executor(
             self._executor,
             lambda: self.sync_run_cmd(
-                cmds, cwd, shell=shell, run_in_dry=run_in_dry, **kw
+                cmds, cwd,
+                shell=shell, run_in_dry=run_in_dry, user=user,
+                **kw
             )
         )
 
@@ -153,6 +160,7 @@ class Context:
         *,
         shell: bool = True,
         run_in_dry: bool = False,
+        user: str | None = None,
         **kw
     ):
         if shell and not isinstance(cmds, str):
@@ -170,7 +178,8 @@ class Context:
         stdout = subprocess.PIPE
         stderr = subprocess.PIPE
         if shell:
-            cmds = ["sudo", "-E", "bash", "-c", ' '.join(cmds)]
+            user = getuser() if user is None else user
+            cmds = ["sudo", "-u", user, "-E", "bash", "-c", ' '.join(cmds)]
         p = subprocess.Popen(
             cmds, cwd=cwd, shell=False, stdin=subprocess.DEVNULL,
             stdout=stdout, stderr=stderr, **kw)
