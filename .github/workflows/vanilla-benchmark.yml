@@ -1,21 +1,22 @@
-name: Benchmark
+name: Vanilla Benchmark
 
 on:
   push:
     branches:
       - master
+      - dev
     paths:
       - nginx_install/**
       - poetry.lock
       - pyproject.toml
-      - .github/workflows/benchmark.yml
+      - .github/workflows/vanilla-benchmark.yml
   pull_request:
     branches: [master]
     paths:
       - nginx_install/**
       - poetry.lock
       - pyproject.toml
-      - .github/workflows/benchmark.yml
+      - .github/workflows/vanilla-benchmark.yml
 
 jobs:
   build:

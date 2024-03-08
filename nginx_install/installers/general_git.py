@@ -1,7 +1,8 @@
+from os.path import relpath
 from pydantic import Field
 from pathlib import Path
 from urllib.parse import urlparse, quote
-from .base import BuiltinInstaller
+from .base import BuiltinInstaller, BaseInstaller
 
 
 class GeneralGitInstaller(BuiltinInstaller):
@@ -61,7 +62,7 @@ class GeneralGitInstaller(BuiltinInstaller):
 
         ctx.core.configure_opts.append(
             f"--add{'-dynamic' if self.dynamic else ''}-module="
-            f"../{self.git_dest}"
+            f"{relpath(path, ctx.nginx_src_dir)}"
         )
 
         ctx.progress.update(task, advance=1)
@@ -77,3 +78,10 @@ class GeneralGitInstaller(BuiltinInstaller):
 
     async def clean(self, ctx):
         ...
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, BaseInstaller):
+            return NotImplemented
+        if not isinstance(other, GeneralGitInstaller):
+            return False
+        return other.url == self.url

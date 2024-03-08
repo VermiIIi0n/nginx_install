@@ -126,7 +126,7 @@ class Context:
     async def run_cmd(
         self,
         cmds: str | tuple[str, ...] | list[str],
-        cwd: str | None = None,
+        cwd: Path | str | None = None,
         *,
         shell: bool = True,
         run_in_dry: bool = False,
@@ -156,13 +156,16 @@ class Context:
     def sync_run_cmd(  # skipcq: PY-R1000
         self,
         cmds: str | tuple[str, ...] | list[str],
-        cwd: str | None = None,
+        cwd: Path | str | None = None,
         *,
         shell: bool = True,
         run_in_dry: bool = False,
         user: str | None = None,
         **kw
     ):
+        if isinstance(cwd, Path):
+            cwd = str(cwd)
+
         if shell and not isinstance(cmds, str):
             cmds = ' '.join(cmds)
 
@@ -262,4 +265,6 @@ class Context:
         rs.raise_for_returncode()
 
     async def has_core_built(self):
+        if self.core.flavor == "openresty":
+            return await aio.path.exists(self.nginx_src_dir / "build")
         return await aio.path.exists(self.nginx_src_dir / "objs" / "nginx")

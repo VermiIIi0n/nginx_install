@@ -121,8 +121,9 @@ has_geoip2 = False
 for installer in filter(lambda x: x.enabled, config.installers):
     ngx_modulenames = getattr(installer, "ngx_modulenames", None)
     if getattr(installer, "dynamic", False) and ngx_modulenames:
-        for ngx_modulename in ngx_modulenames:
-            module_loading += f"load_module {config.core.modules_path.resolve() / ngx_modulename}.so;\n"
+        if not (isinstance(installer, (installers.HeadersMoreInstaller, installers.NginxDevKitInstaller)) and config.core.flavor == "openresty"):
+            for ngx_modulename in ngx_modulenames:
+                module_loading += f"load_module {config.core.modules_path.resolve() / ngx_modulename}.so;\n"
     if isinstance(installer, installers.BrotliInstaller):
         has_brotli = True
     if isinstance(installer, installers.GeoIP2Installer):

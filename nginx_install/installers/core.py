@@ -11,7 +11,7 @@ from .base import BuiltinInstaller
 from ..context import Context, Result
 
 
-ver_re = re.compile(r"nginx-(\d+)\.(\d+)\.(\d+)")
+ver_re = re.compile(r".*?\-(\d+\.\d+\.\d+)(\.\d+)?(?:\.tar\.gz)?$")
 
 
 class VersionSheet:
@@ -51,6 +51,7 @@ class NginxInstaller(BuiltinInstaller):
     enabled: Literal[True] = Field(default=True, exclude=True)
 
     nginx_version: Literal["stable", "mainline", "latest"] | str = "stable"
+    flavor: Literal["vanilla", "openresty"] = "vanilla"
     config_prefix: Path = Path("/etc/nginx")
     config_name: str = "nginx.conf"
     sbin_path: Path = Path("/usr/sbin/nginx")
@@ -112,7 +113,7 @@ class NginxInstaller(BuiltinInstaller):
             "-fPIC",
             "-Wdate-time",
             "-D_FORTIFY_SOURCE=2",
-            "-flto",
+            # "-flto",
             "-funroll-loops",
             "-ffunction-sections",
             "-fdata-sections",
@@ -141,8 +142,52 @@ class NginxInstaller(BuiltinInstaller):
         ret.append(f"--group={self.group}")
         return ret
 
+    async def get_versions(self, client: httpx.AsyncClient | None = None):
+        match self.flavor:
+            case "vanilla":
+                return await self.get_vanilla_versions(client)
+            case "openresty":
+                return await self.get_openresty_versions(client)
+
+        raise ValueError(f"Unknown nginx flavor: {self.flavor}")
+
     @staticmethod
-    async def get_versions(client: httpx.AsyncClient | None = None):
+    async def get_openresty_versions(client: httpx.AsyncClient | None = None):
+        openresty_release_page = "https://openresty.org/en/download.html"
+        if client is None:
+            client = httpx.AsyncClient()
+        r = await client.get(openresty_release_page, follow_redirects=True)
+        r.raise_for_status()
+
+        soup = bs4.BeautifulSoup(r.text, "lxml")
+        # typo in openresty.org
+        latest_header = soup.find(id="lastest-release")
+        if latest_header is None:
+            latest_header = soup.find(
+                id="latest-release")  # in case they fix it
+        latest_version_str = latest_header.find_next('a').text.strip()
+        latest_version = ver_re.match(latest_version_str)
+        if latest_version is None:
+            raise ValueError(
+                f"Failed to parse version from {latest_version_str}")
+        latest_version_str = f"{latest_version.group(1)}-{latest_version.group(2)[1:]}"
+        # Convert openresty version to semantic version
+        latest_version = Version(latest_version_str)
+
+        legacy_header = soup.find(id="legacy-releases")
+        ul = legacy_header.find_next("ul")
+        legacy_versions = list[Version]()
+        for li in ul.find_all("li"):
+            ver = ver_re.match(li.a.text.strip())
+            if ver is None:
+                continue
+            ver_str = f"{ver.group(1)}-{ver.group(2)[1:]}"
+            legacy_versions.append(Version(ver_str))
+
+        return VersionSheet(latest_version, latest_version, legacy_versions)
+
+    @staticmethod
+    async def get_vanilla_versions(client: httpx.AsyncClient | None = None):
         nginx_release_page = "https://nginx.org/en/download.html"
         if client is None:
             client = httpx.AsyncClient()
@@ -153,45 +198,34 @@ class NginxInstaller(BuiltinInstaller):
 
         mainline_header = soup.find(string="Mainline version")
         mainline_table = mainline_header.find_next("table")
-        mainline_version_a = mainline_table.find_all("a")
+        mainline_version_a = mainline_table.find_all('a')
         for v in mainline_version_a:
             ver = ver_re.match(v.string)
             if ver is None:
                 continue
-            mainline_version = Version(
-                major=int(ver.group(1)),
-                minor=int(ver.group(2)),
-                patch=int(ver.group(3))
-            )
+            mainline_version = Version(ver.group(1))
             break
 
         stable_header = soup.find(string="Stable version")
         stable_table = stable_header.find_next("table")
-        stable_version_a = stable_table.find_all("a")
+        stable_version_a = stable_table.find_all('a')
         for v in stable_version_a:
             ver = ver_re.match(v.string)
             if ver is None:
                 continue
-            stable_version = Version(
-                major=int(ver.group(1)),
-                minor=int(ver.group(2)),
-                patch=int(ver.group(3))
-            )
+            stable_version = Version(ver.group(1))
             break
 
         legacy_header = soup.find(string="Legacy versions")
         legacy_tables = legacy_header.find_all_next("table")
         legacy_versions = list[Version]()
         for tab in legacy_tables:
-            legacy_version_a = tab.find_all("a")
+            legacy_version_a = tab.find_all('a')
             for v in legacy_version_a:
                 ver = ver_re.match(v.string)
                 if ver is None:
                     continue
-                legacy_versions.append(
-                    Version(major=int(ver.group(1)), minor=int(
-                        ver.group(2)), patch=int(ver.group(3)))
-                )
+                legacy_versions.append(Version(ver.group(1)))
 
         return VersionSheet(mainline_version, stable_version, legacy_versions)
 
@@ -218,7 +252,12 @@ WantedBy=multi-user.target
 
     async def prepare(self, ctx: Context):
         ctx.logger.info("Start preparing nginx")
-        task = ctx.progress.add_task("Prepare core", total=3)
+        task = ctx.progress.add_task(
+            f"Prepare {self.flavor} core", total=3)
+
+        if self.flavor == "openresty":
+            self._forbid_ndk(ctx, "OpenResty already has one")
+            self._forbid_headers_more(ctx, "OpenResty already has one")
 
         v_sheet = await self.get_versions(ctx.client)
         ctx.logger.debug(
@@ -228,11 +267,21 @@ WantedBy=multi-user.target
         semversion = v_sheet.get_matching_version(self.nginx_version)
         ctx.logger.info("%s: Downloading nginx version %s", self, semversion)
 
-        download_url = f"https://nginx.org/download/nginx-{semversion}.tar.gz"
+        if self.flavor == "vanilla":
+            download_url = f"https://nginx.org/download/nginx-{semversion}.tar.gz"
+            nginx_version = f"nginx-{semversion}"
+        elif self.flavor == "openresty":
+            ver_str = str(semversion).replace("-", ".")
+            if semversion <= Version("1.9.7-2"):
+                nginx_version = f"ngx_openresty-{ver_str}"
+            else:
+                nginx_version = f"openresty-{ver_str}"
+            download_url = f"https://openresty.org/download/{nginx_version}.tar.gz"
+        else:
+            raise ValueError(f"Unknown nginx flavor: {self.flavor}")
         ctx.logger.info("%s: Downloading nginx source from %s",
                         self, download_url)
 
-        nginx_version = f"nginx-{semversion}"
         tar_path = ctx.build_dir / f"{nginx_version}.tar.gz"
 
         ctx.progress.update(task, advance=1)
@@ -384,3 +433,21 @@ WantedBy=multi-user.target
 
         ctx.logger.info("Nginx cleaning completed")
         ctx.progress.update(task, advance=1)
+
+    def _forbid_ndk(self, ctx: Context, reason):
+        for i, mod in enumerate(ctx.cfg.installers.copy()):
+            if mod.enabled and mod.classname == "NginxDevKitInstaller":
+                ctx.logger.warning(
+                    "%s: NginxDevKitInstaller is disabled because %s", self, reason
+                )
+                mod.enabled = False
+                del ctx.cfg.installers[i]
+
+    def _forbid_headers_more(self, ctx: Context, reason):
+        for i, mod in enumerate(ctx.cfg.installers.copy()):
+            if mod.enabled and mod.classname == "HeadersMoreInstaller":
+                ctx.logger.warning(
+                    "%s: HeadersMoreInstaller is disabled because %s", self, reason
+                )
+                mod.enabled = False
+                del ctx.cfg.installers[i]

@@ -59,6 +59,9 @@ class BaseInstaller(ABC, BaseModel):
     def __str__(self) -> str:
         return f"{self.classname}()"
 
+    def __eq__(self, other: object) -> bool:
+        return type(self) == type(other)
+
 
 class BuiltinInstaller(BaseInstaller):
     @property

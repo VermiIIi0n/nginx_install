@@ -1,3 +1,4 @@
+from os.path import relpath
 from .base import BuiltinInstaller
 
 
@@ -23,7 +24,7 @@ class HeadersMoreInstaller(BuiltinInstaller):
 
         ctx.core.configure_opts.append(
             f"--add{'-dynamic' if self.dynamic else ''}-module="
-            "../headers-more-nginx-module"
+            f"{relpath(path, ctx.nginx_src_dir)}"
         )
 
         ctx.progress.update(task, advance=1)

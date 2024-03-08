@@ -1,0 +1,114 @@
+name: Vanilla CI
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+    paths:
+      - nginx_install/**
+      - poetry.lock
+      - pyproject.toml
+      - .github/workflows/vanilla-test.yml
+  pull_request:
+    branches: [master]
+    paths:
+      - nginx_install/**
+      - poetry.lock
+      - pyproject.toml
+      - .github/workflows/vanilla-test.yml
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-22.04, ubuntu-20.04]
+        python-version: ["3.12"]
+        config: [core, all]
+        dynamic: ["false"]
+        nginx_version: [mainline, stable]
+        include:
+          - os: ubuntu-latest
+            python-version: "3.12"
+            config: all
+            dynamic: "true"
+            nginx_version: mainline
+          - os: ubuntu-latest
+            python-version: "3.10"
+            config: all
+            nginx_version: mainline
+          - os: ubuntu-latest
+            python-version: "3.11"
+            config: all
+            nginx_version: mainline
+          - os: ubuntu-latest
+            python-version: "pypy3.10"
+            config: all
+            nginx_version: mainline
+        exclude:
+          - config: core
+            dynamic: "true"
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          pip install -U poetry
+          poetry install
+      - name: Run test suite
+        run: |
+          poetry run py.test -v --cov=nginx_install
+        if: matrix.python-version != 'pypy3.10'
+      - name: Perform type check
+        run: |
+          poetry run pytest --mypy -m mypy nginx_install
+        if: matrix.python-version != 'pypy3.10'
+      - name: pip install
+        run: |
+          poetry build
+          pip install ./
+      - name: Generate config
+        run: |
+          python ./scripts/congen.py config.yaml ${{ matrix.config }} -v ${{ matrix.nginx_version }}
+      - name: Generate config - dynamic
+        run: |
+          python ./scripts/congen.py config.yaml ${{ matrix.config }} --dynamic -v ${{ matrix.nginx_version }}
+        if: matrix.dynamic == 'true'
+      - name: Copy geoip2 database
+        run: |
+          sudo tar -xvf ./scripts/GeoIP.tar.gz -C /usr/local/share/
+          sudo tar -xvf ./scripts/city.tar.gz -C /usr/local/share/GeoIP/
+      - name: Dry test
+        run: |
+          nginx_install install --dry --verbose
+          nginx_install uninstall --dry --verbose
+      - name: Wet test - separate
+        run: |
+          poetry build
+          pip install ./
+          sudo -E `which python` -m nginx_install prepare ./build
+          sudo -E `which python` -m nginx_install build ./build
+          sudo -E `which python` -m nginx_install install ./build --no-build
+          sudo -E `which python` -m nginx_install uninstall ./build
+          sudo -E `which python` -m nginx_install clean ./build
+      - name: Wet test - combined
+        run: |
+          sudo -E `which python` -m nginx_install install
+          sudo -E `which python` -m nginx_install uninstall
+        # env:
+        #   MAXMIND_ID: ${{ secrets.MAXMIND_ID }}
+        #   MAXMIND_KEY: ${{ secrets.MAXMIND_KEY }}
+    # - name: Upload coverage result
+    #   env:
+    #     COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+    #   run: |
+    #      if [ -n "${COVERALLS_REPO_TOKEN}" ]; then
+    #         poetry run coveralls
+    #      fi
+    #   if: ${{ matrix.os == 'ubuntu-latest' && contains(matrix.python-version, '3.12') }}
