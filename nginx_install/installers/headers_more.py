@@ -1,7 +1,7 @@
-from .base import BaseInstaller
+from .base import BuiltinInstaller
 
 
-class HeadersMoreInstaller(BaseInstaller):
+class HeadersMoreInstaller(BuiltinInstaller):
     enabled: bool = False
     dynamic: bool = False
 

@@ -3,12 +3,14 @@ from __future__ import annotations
 import inspect
 from abc import ABC, abstractmethod
 from importlib import import_module
-from pydantic import BaseModel, computed_field, ConfigDict
+from pydantic import BaseModel, ConfigDict
+from pydantic import model_serializer, computed_field
 from ..context import Context
 
 
 def get_cls_from_dict(data: dict) -> type[BaseInstaller]:
-    mod = import_module(data["modulename"])
+    modulename = data.get("modulename", "nginx_install.installers")
+    mod = import_module(modulename)
     return getattr(mod, data["classname"])
 
 
@@ -56,3 +58,15 @@ class BaseInstaller(ABC, BaseModel):
 
     def __str__(self) -> str:
         return f"{self.classname}()"
+
+
+class BuiltinInstaller(BaseInstaller):
+    @property
+    def modulename(self) -> str:
+        return "nginx_install.installers"
+
+    @model_serializer(mode="wrap", when_used="json")
+    def rm_modulename(self, hdlr):
+        data = hdlr(self)
+        del data["modulename"]
+        return data

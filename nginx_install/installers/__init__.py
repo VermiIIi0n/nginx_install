@@ -22,6 +22,7 @@ _non_core_installer_types: list[type] = [
 
 __all__ = [
     "BaseInstaller",
+    "BuiltinInstaller",
     "NginxInstaller",
     "OpenSSLInstaller",
     "ZlibCFInstaller",

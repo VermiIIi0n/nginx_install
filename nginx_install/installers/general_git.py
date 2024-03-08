@@ -1,10 +1,10 @@
 from pydantic import Field
 from pathlib import Path
 from urllib.parse import urlparse, quote
-from .base import BaseInstaller
+from .base import BuiltinInstaller
 
 
-class GeneralGitInstaller(BaseInstaller):
+class GeneralGitInstaller(BuiltinInstaller):
     """
     # GeneralGitInstaller
     Many modules simply require a git clone and

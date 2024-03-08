@@ -1,7 +1,7 @@
-from .base import BaseInstaller
+from .base import BuiltinInstaller
 
 
-class BrotliInstaller(BaseInstaller):
+class BrotliInstaller(BuiltinInstaller):
     enabled: bool = False
     dynamic: bool = False
 

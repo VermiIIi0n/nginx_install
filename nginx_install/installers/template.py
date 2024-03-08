@@ -1,7 +1,7 @@
-from .base import BaseInstaller
+from .base import BuiltinInstaller
 
 
-class TempInstaller(BaseInstaller):
+class TempInstaller(BuiltinInstaller):
     enabled: bool = False
 
     async def prepare(self, ctx):

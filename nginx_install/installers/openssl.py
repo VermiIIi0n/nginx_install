@@ -1,11 +1,11 @@
 import bs4
 import re
-from .base import BaseInstaller
+from .base import BuiltinInstaller
 
 ver_re = re.compile(r".*?(\d+\.\d+\.\d+)$")
 
 
-class OpenSSLInstaller(BaseInstaller):
+class OpenSSLInstaller(BuiltinInstaller):
     enabled: bool = False
 
     async def prepare(self, ctx):

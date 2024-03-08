@@ -7,7 +7,7 @@ from semantic_version import Version, SimpleSpec
 from pydantic import Field
 from pathlib import Path
 from vermils.io import aio
-from .base import BaseInstaller
+from .base import BuiltinInstaller
 from ..context import Context, Result
 
 
@@ -47,7 +47,7 @@ class VersionSheet:
                 return v_sheet.get_latest_matching(v_spec)
 
 
-class NginxInstaller(BaseInstaller):
+class NginxInstaller(BuiltinInstaller):
     enabled: Literal[True] = Field(default=True, exclude=True)
 
     nginx_version: Literal["stable", "mainline", "latest"] | str = "stable"

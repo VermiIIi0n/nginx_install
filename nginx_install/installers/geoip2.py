@@ -7,12 +7,12 @@ from pathlib import Path
 from vermils.io import aio
 from pydantic import Field
 from ..context import Context
-from .base import BaseInstaller
+from .base import BuiltinInstaller
 
 ver_re = re.compile(r"^(\d+\.\d+\.\d+)$")
 
 
-class GeoIP2Installer(BaseInstaller):
+class GeoIP2Installer(BuiltinInstaller):
     enabled: bool = False
     dynamic: bool = False
     account_id: str = ''

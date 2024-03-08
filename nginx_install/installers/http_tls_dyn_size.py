@@ -1,12 +1,12 @@
 import re
 from semantic_version import Version
 from vermils.io import aio
-from .base import BaseInstaller
+from .base import BuiltinInstaller
 
 ver_re = re.compile(r"^nginx__dynamic_tls_records_(\d+\.\d+\.\d+)\+?\.patch$")
 
 
-class DynamicResizeTLSInstaller(BaseInstaller):
+class DynamicResizeTLSInstaller(BuiltinInstaller):
     enabled: bool = False
 
     async def prepare(self, ctx):
