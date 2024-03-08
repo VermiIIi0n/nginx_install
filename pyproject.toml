@@ -151,3 +151,4 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 nginx_install = "nginx_install.cli:run"
+nginx-install = "nginx_install.cli:run"

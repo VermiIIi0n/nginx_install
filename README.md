@@ -18,7 +18,7 @@ Go to discussions to request more modules.
 ## Installation
 
 ```bash
-pip install -U nginx_install
+pip install -U nginx-install
 ```
 
 or
@@ -35,19 +35,19 @@ poetry install
 Create a `config.yaml`, use any `action` as the first argument, it won't actually run if `config.yaml` is not found.
 
 ```bash
-nginx_install uninstall --dry ## creates a config.yaml file and quits
+nginx-install uninstall --dry ## creates a config.yaml file and quits
 ```
 
 Edit your `config.yaml` and run the following command to install Nginx:
 
 ```bash
-nginx_install install
+nginx-install install
 ```
 
 To uninstall Nginx, use the following command:
 
 ```bash
-nginx_install uninstall
+nginx-install uninstall
 ```
 
 ## Usage
@@ -55,7 +55,7 @@ nginx_install uninstall
 ### Installed by `pip`
 
 ```bash
-nginx_install { prepare | build | install | uninstall | clean } [build_dir]
+nginx-install { prepare | build | install | uninstall | clean } [build_dir]
 ```
 
 When you first run the script, you will be asked to create a `config.yaml` under the current directory. You may not want to run as root when creating the `config.yaml` file.
@@ -70,19 +70,19 @@ When running the script for real business, you might want to run as root, becaus
 To just build the Nginx binary, use the following command:
 
 ```bash
-nginx_install build
+nginx-install build
 ```
 
 To just install without building, use the following command:
 
 ```bash
-nginx_install install --no-build
+nginx-install install --no-build
 ```
 
 To build and install Nginx, use the following command:
 
 ```bash
-nginx_install install
+nginx-install install
 ```
 
 **`build` and plain `install` both delete the previous build directory and create a new one.**
@@ -108,7 +108,7 @@ poetry run `which python` nginx_install <...>
 Use `--dry` to run the script in dry-run mode. In this mode, the script will not change anything outside of `build_dir` but will print the commands to be executed.
 
 ```bash
-nginx_install --dry build
+nginx-install --dry build
 ```
 
 **no root should be required if you have access to the build directory.**
