@@ -7,12 +7,14 @@ on:
     paths:
       - nginx_install/**
       - poetry.lock
+      - pyproject.toml
       - .github/workflows/benchmark.yml
   pull_request:
     branches: [master]
     paths:
       - nginx_install/**
       - poetry.lock
+      - pyproject.toml
       - .github/workflows/benchmark.yml
 
 jobs:
