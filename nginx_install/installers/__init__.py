@@ -1,4 +1,4 @@
-from .base import BaseInstaller, from_dict
+from .base import BaseInstaller, BuiltinInstaller, from_dict
 from .core import NginxInstaller
 from .openssl import OpenSSLInstaller
 from .zlib_cf import ZlibCFInstaller
@@ -8,6 +8,8 @@ from .http_tls_dyn_size import DynamicResizeTLSInstaller
 from .brotli import BrotliInstaller
 from .geoip2 import GeoIP2Installer
 from .general_git import GeneralGitInstaller
+from .subfilter import SubFilterInstaller
+from .ndk import NginxDevKitInstaller
 
 _non_core_installer_types: list[type] = [
     OpenSSLInstaller,
@@ -18,6 +20,8 @@ _non_core_installer_types: list[type] = [
     GeoIP2Installer,
     ZlibCFInstaller,
     GeneralGitInstaller,
+    SubFilterInstaller,
+    NginxDevKitInstaller,
 ]
 
 __all__ = [
@@ -32,6 +36,8 @@ __all__ = [
     "BrotliInstaller",
     "GeoIP2Installer",
     "GeneralGitInstaller",
+    "SubFilterInstaller",
+    "NginxDevKitInstaller",
     "from_dict",
     "_non_core_installer_types",
 ]
