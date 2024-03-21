@@ -15,6 +15,11 @@ This script is designed to install Nginx on modern Ubuntu, other Debian-based sy
 - [Substitutions Filter](https://github.com/yaoweibin/ngx_http_substitutions_filter_module)
 - [Development Kit](https://github.com/vision5/ngx_devel_kit)
 
+## Supported Flavors
+
+- Vanilla
+- OpenResty
+
 Go to discussions to request more modules.
 
 ## Installation
@@ -67,24 +72,24 @@ The first positional argument is the action to be performed.
 
 The second positional argument is optional and is used to specify the build directory. If not specified, the default build directory is used.
 
-When running the script for real business, you might want to run as root, because the script needs to install packages and create directories.
+When running the script for real business, you will be prompted to run as root, because the script needs to install packages and create directories.
 
 To just build the Nginx binary, use the following command:
 
 ```bash
-nginx-install build
+nginx-install build ./build  # Or any other build directory
 ```
 
 To just install without building, use the following command:
 
 ```bash
-nginx-install install --no-build
+nginx-install install --no-build ./build  # Or any other build directory
 ```
 
 To build and install Nginx, use the following command:
 
 ```bash
-nginx-install install
+nginx-install install  # Here the build directory is in a tmp dir
 ```
 
 **`build` and plain `install` both delete the previous build directory and create a new one.**
