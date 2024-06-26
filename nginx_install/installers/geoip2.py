@@ -125,9 +125,28 @@ class GeoIP2Installer(BuiltinInstaller):
     ):
         logger = ctx.logger
         logger.debug("%s: Installing geoipupdate", self)
-        rs = await ctx.run_cmd(
-            "apt update && apt install -y geoipupdate"
-        )
+        # if system flavor is debian
+        if os.path.exists("/etc/debian_version"):
+            arch = os.uname().machine
+            if arch == "x86_64":
+                arch = "amd64"
+            elif arch == "aarch64":
+                arch = "arm64"
+            else:
+                raise RuntimeError(f"{self}: Unknown architecture {arch}")
+            rs = await ctx.run_cmd(
+                "wget -qO geoipupdate.deb "
+                "https://github.com/maxmind/geoipupdate/releases/download/v7.0.1/"
+                f"geoipupdate_7.0.1_linux_{arch}.deb"
+                "&& dpkg -i geoipupdate.deb && rm geoipupdate.deb"
+            )
+        else:
+            rs = await ctx.run_cmd(
+                "apt-get update "
+                "&& apt-get install -y software-properties-common python3-launchpadlib"
+                "&& add-apt-repository ppa:maxmind/ppa "
+                "&& apt-get update && apt-get install -y geoipupdate"
+            )
         rs.raise_for_returncode()
 
         conf = (
