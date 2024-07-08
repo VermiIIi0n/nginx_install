@@ -11,7 +11,7 @@ from .base import BuiltinInstaller
 from ..context import Context, Result
 
 
-ver_re = re.compile(r".*?\-(\d+\.\d+\.\d+)(\.\d+)?(?:\.tar\.gz)?$")
+ver_re = re.compile(r"[\-vV](\d+\.\d+\.\d+)(\.\d+)?")
 
 
 class VersionSheet:
@@ -31,7 +31,7 @@ class VersionSheet:
     def get_latest_matching(self, spec: SimpleSpec | None = None) -> Version:
         if spec is None:
             return max(self.all)
-        return max(filter(spec.match, self.all))
+        return max(filter(spec.search, self.all))
 
     def get_matching_version(self, v_spec_str: str) -> Version:
         v_sheet = self
@@ -153,38 +153,21 @@ class NginxInstaller(BuiltinInstaller):
 
     @staticmethod
     async def get_openresty_versions(client: httpx.AsyncClient | None = None):
-        openresty_release_page = "https://openresty.org/en/download.html"
+        latest_page = "https://github.com/openresty/openresty/releases/latest"
         if client is None:
             client = httpx.AsyncClient()
-        r = await client.get(openresty_release_page, follow_redirects=True)
+        r = await client.get(latest_page, follow_redirects=True)
         r.raise_for_status()
 
-        soup = bs4.BeautifulSoup(r.text, "lxml")
-        # typo in openresty.org
-        latest_header = soup.find(id="lastest-release")
-        if latest_header is None:
-            latest_header = soup.find(
-                id="latest-release")  # in case they fix it
-        latest_version_str = latest_header.find_next('a').text.strip()
-        latest_version = ver_re.match(latest_version_str)
+        latest_version = ver_re.search(r.url.path.split('/')[-1])
         if latest_version is None:
             raise ValueError(
-                f"Failed to parse version from {latest_version_str}")
+                f"Failed to parse version from url {r.url}")
         latest_version_str = f"{latest_version.group(1)}-{latest_version.group(2)[1:]}"
         # Convert openresty version to semantic version
         latest_version = Version(latest_version_str)
 
-        legacy_header = soup.find(id="legacy-releases")
-        ul = legacy_header.find_next("ul")
-        legacy_versions = list[Version]()
-        for li in ul.find_all("li"):
-            ver = ver_re.match(li.a.text.strip())
-            if ver is None:
-                continue
-            ver_str = f"{ver.group(1)}-{ver.group(2)[1:]}"
-            legacy_versions.append(Version(ver_str))
-
-        return VersionSheet(latest_version, latest_version, legacy_versions)
+        return VersionSheet(latest_version, latest_version, [])
 
     @staticmethod
     async def get_vanilla_versions(client: httpx.AsyncClient | None = None):
@@ -200,7 +183,7 @@ class NginxInstaller(BuiltinInstaller):
         mainline_table = mainline_header.find_next("table")
         mainline_version_a = mainline_table.find_all('a')
         for v in mainline_version_a:
-            ver = ver_re.match(v.string)
+            ver = ver_re.search(v.string)
             if ver is None:
                 continue
             mainline_version = Version(ver.group(1))
@@ -210,7 +193,7 @@ class NginxInstaller(BuiltinInstaller):
         stable_table = stable_header.find_next("table")
         stable_version_a = stable_table.find_all('a')
         for v in stable_version_a:
-            ver = ver_re.match(v.string)
+            ver = ver_re.search(v.string)
             if ver is None:
                 continue
             stable_version = Version(ver.group(1))
@@ -222,7 +205,7 @@ class NginxInstaller(BuiltinInstaller):
         for tab in legacy_tables:
             legacy_version_a = tab.find_all('a')
             for v in legacy_version_a:
-                ver = ver_re.match(v.string)
+                ver = ver_re.search(v.string)
                 if ver is None:
                     continue
                 legacy_versions.append(Version(ver.group(1)))
