@@ -1,3 +1,4 @@
+import shutil
 import bs4
 import re
 import asyncio
@@ -113,9 +114,35 @@ class GeoIP2Installer(BuiltinInstaller):
             path_prefix = ctx.build_dir / eid
             rs = await ctx.run_cmd(
                 f"tar -xzf '{path_prefix}.tar.gz' -C '{ctx.build_dir}' "
-                f"&& cp -rf '{path_prefix}_'* {self.database_dir}"
+                f"&& cp -rf '{path_prefix}_'* {self.database_dir} "
+
             )
             rs.raise_for_returncode()
+
+            newest = ''
+            for folder in os.listdir(self.database_dir):
+                if not os.path.isdir(self.database_dir / folder):
+                    continue
+                if folder.startswith(eid) and folder > newest:
+                    newest = folder
+            newest_dir = self.database_dir / newest
+            newest_file = newest_dir / f"{eid}.mmdb"
+            linkdest = self.database_dir / f"{eid}.mmdb"
+            if not newest or not newest_file.exists():
+                logger.warning(
+                    "%s: Cannot extract %s database file from decompressed content",
+                    self, eid
+                )
+                continue
+            if linkdest.exists():
+                os.remove(linkdest)
+            shutil.copy(newest_file, linkdest)
+
+            for folder in os.listdir(self.database_dir):
+                if not os.path.isdir(self.database_dir / folder):
+                    continue
+                if folder.startswith(eid):
+                    shutil.rmtree(self.database_dir / folder)
 
         return edition_ids
 
@@ -153,13 +180,15 @@ class GeoIP2Installer(BuiltinInstaller):
             f"AccountID {account_id}\n"
             f"LicenseKey {license_key}\n"
             f"EditionIDs {' '.join(edition_ids)}\n"
+            f"DatabaseDirectory {self.database_dir}\n"
         )
         logger.debug("%s: Writing GeoIP2.conf", self)
         if not ctx.dry_run:
             async with aio.open(self.conf_path, "w") as f:
                 await f.write(conf)
         rs = await ctx.run_cmd(
-            f"echo \"{self.auto_update_cron} `which geoipupdate`\" "
+            f"echo \"{self.auto_update_cron} "
+            f"`which geoipupdate` -f \"{self.conf_path}\"\" "
             "> /etc/cron.d/geoipupdate"
         )
         rs.raise_for_returncode()
