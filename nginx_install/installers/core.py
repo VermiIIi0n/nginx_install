@@ -382,6 +382,18 @@ WantedBy=multi-user.target
         rs = await ctx.run_cmd("systemctl enable nginx")
         rs.raise_for_returncode()
 
+        paths = (self.error_log_path, self.http_log_path)
+        for p in paths:
+            await aio.os.makedirs(p.parent, exist_ok=True)
+            if not p.exists():
+                ctx.logger.debug("%s: Creating log file %s", self, p)
+                async with aio.open(p, "w") as f:
+                    await f.write('')
+            ctx.logger.debug("%s: Chown %s to %s:%s",
+                             self, p, self.user, self.group)
+            rs = await ctx.run_cmd(f"chown {self.user}:{self.group} {p}")
+            rs.raise_for_returncode()
+
         ctx.logger.info("Nginx installation completed")
         ctx.progress.update(task, advance=1)
 
