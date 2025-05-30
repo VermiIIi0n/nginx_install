@@ -23,7 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-22.04, ubuntu-20.04]
+        os: [ubuntu-latest, ubuntu-22.04, ubuntu-24.04]
         python-version: ["3.12"]
         config: [core, all]
         dynamic: ["false"]

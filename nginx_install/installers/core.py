@@ -11,7 +11,7 @@ from .base import BuiltinInstaller
 from ..context import Context, Result
 
 
-ver_re = re.compile(r"[\-vV](\d+\.\d+\.\d+)(\.\d+)?")
+ver_re = re.compile(r".*?\-(\d+\.\d+\.\d+)(\.\d+)?(?:\.tar\.gz)?$")
 
 
 class VersionSheet:
@@ -153,21 +153,54 @@ class NginxInstaller(BuiltinInstaller):
 
     @staticmethod
     async def get_openresty_versions(client: httpx.AsyncClient | None = None):
-        latest_page = "https://github.com/openresty/openresty/releases/latest"
+        # latest_page = "https://github.com/openresty/openresty/releases/latest"
+        # if client is None:
+        #     client = httpx.AsyncClient()
+        # r = await client.get(latest_page, follow_redirects=True)
+        # r.raise_for_status()
+
+        # latest_version = ver_re.search(r.url.path.split('/')[-1])
+        # if latest_version is None:
+        #     raise ValueError(
+        #         f"Failed to parse version from url {r.url}")
+        # latest_version_str = f"{latest_version.group(1)}-{latest_version.group(2)[1:]}"
+        # # Convert openresty version to semantic version
+        # latest_version = Version(latest_version_str)
+
+        # return VersionSheet(latest_version, latest_version, [])
+
+        openresty_release_page = "https://openresty.org/en/download.html"
         if client is None:
             client = httpx.AsyncClient()
-        r = await client.get(latest_page, follow_redirects=True)
+        r = await client.get(openresty_release_page, follow_redirects=True)
         r.raise_for_status()
 
-        latest_version = ver_re.search(r.url.path.split('/')[-1])
+        soup = bs4.BeautifulSoup(r.text, "lxml")
+        # typo in openresty.org
+        latest_header = soup.find(id="lastest-release")
+        if latest_header is None:
+            latest_header = soup.find(
+                id="latest-release")  # in case they fix it
+        latest_version_str = latest_header.find_next('a').text.strip()
+        latest_version = ver_re.match(latest_version_str)
         if latest_version is None:
             raise ValueError(
-                f"Failed to parse version from url {r.url}")
+                f"Failed to parse version from {latest_version_str}")
         latest_version_str = f"{latest_version.group(1)}-{latest_version.group(2)[1:]}"
         # Convert openresty version to semantic version
         latest_version = Version(latest_version_str)
 
-        return VersionSheet(latest_version, latest_version, [])
+        legacy_header = soup.find(id="legacy-releases")
+        ul = legacy_header.find_next("ul")
+        legacy_versions = list[Version]()
+        for li in ul.find_all("li"):
+            ver = ver_re.match(li.a.text.strip())
+            if ver is None:
+                continue
+            ver_str = f"{ver.group(1)}-{ver.group(2)[1:]}"
+            legacy_versions.append(Version(ver_str))
+
+        return VersionSheet(latest_version, latest_version, legacy_versions)
 
     @staticmethod
     async def get_vanilla_versions(client: httpx.AsyncClient | None = None):
