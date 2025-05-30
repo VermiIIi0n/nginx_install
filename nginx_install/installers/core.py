@@ -153,22 +153,6 @@ class NginxInstaller(BuiltinInstaller):
 
     @staticmethod
     async def get_openresty_versions(client: httpx.AsyncClient | None = None):
-        # latest_page = "https://github.com/openresty/openresty/releases/latest"
-        # if client is None:
-        #     client = httpx.AsyncClient()
-        # r = await client.get(latest_page, follow_redirects=True)
-        # r.raise_for_status()
-
-        # latest_version = ver_re.search(r.url.path.split('/')[-1])
-        # if latest_version is None:
-        #     raise ValueError(
-        #         f"Failed to parse version from url {r.url}")
-        # latest_version_str = f"{latest_version.group(1)}-{latest_version.group(2)[1:]}"
-        # # Convert openresty version to semantic version
-        # latest_version = Version(latest_version_str)
-
-        # return VersionSheet(latest_version, latest_version, [])
-
         openresty_release_page = "https://openresty.org/en/download.html"
         if client is None:
             client = httpx.AsyncClient()
